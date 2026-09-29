@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Listening Map</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: a tape-deck style transport over a horizontally scrolling multi-lane timeline; inspector and tabs below. */
+:root{
+  --bg:#eef0f3; --surface:#ffffff; --surface-2:#f5f6f8; --line:#d7dbe2; --fg:#181c24; --muted:#5b6474;
+  --accent:#c2550f; --focus:#2f5fd0; --wave:#8a94a6; --grid:rgba(24,28,36,.07); --mk:#9b3d9e;
+  --c-rose:#d6335b; --c-amber:#d38a0c; --c-olive:#6f9a1a; --c-green:#1f9d57; --c-teal:#12948a;
+  --c-sky:#1b8cc4; --c-blue:#4a55d6; --c-violet:#7c4ddb; --c-plum:#b93aa9; --c-slate:#6a7587;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --ui:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gut:120px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12151b; --surface:#1a1e26; --surface-2:#20252f; --line:#2f3642; --fg:#e7eaf0; --muted:#98a1b2;
+  --accent:#f08a3c; --focus:#7aa2ff; --wave:#6d7890; --grid:rgba(231,234,240,.06); --mk:#d77ad9;
+  --c-rose:#f06a8a; --c-amber:#f0b040; --c-olive:#a3c94a; --c-green:#4fcf86; --c-teal:#3cc7bb;
+  --c-sky:#52b8ec; --c-blue:#8290f5; --c-violet:#a888f2; --c-plum:#e07ad2; --c-slate:#9aa5b8;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151b; --surface:#1a1e26; --surface-2:#20252f; --line:#2f3642; --fg:#e7eaf0; --muted:#98a1b2;
+  --accent:#f08a3c; --focus:#7aa2ff; --wave:#6d7890; --grid:rgba(231,234,240,.06); --mk:#d77ad9;
+  --c-rose:#f06a8a; --c-amber:#f0b040; --c-olive:#a3c94a; --c-green:#4fcf86; --c-teal:#3cc7bb;
+  --c-sky:#52b8ec; --c-blue:#8290f5; --c-violet:#a888f2; --c-plum:#e07ad2; --c-slate:#9aa5b8;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui);padding-inline:16px;padding-block:14px 32px}
+.app{max-width:1440px;margin:0 auto;display:grid;gap:12px}
+button,input,select,textarea{font:inherit;color:inherit}
+.c-rose{--cc:var(--c-rose)}.c-amber{--cc:var(--c-amber)}.c-olive{--cc:var(--c-olive)}.c-green{--cc:var(--c-green)}.c-teal{--cc:var(--c-teal)}
+.c-sky{--cc:var(--c-sky)}.c-blue{--cc:var(--c-blue)}.c-violet{--cc:var(--c-violet)}.c-plum{--cc:var(--c-plum)}.c-slate{--cc:var(--c-slate)}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1 1 260px}
+.brand h1{font:700 22px/1 var(--display);letter-spacing:-.01em;margin:0;white-space:nowrap}
+.brand .doc{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{font:500 13px/1 var(--ui);padding:8px 11px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible,.chip:focus-visible,.sw:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.sm{padding:5px 8px;font-size:12px}
+.btn[disabled]{opacity:.45;cursor:default}
+.sep{width:1px;height:22px;background:var(--line)}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent)}
+.pop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.pop input[type=text]{flex:1 1 280px;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.note{color:var(--muted);font-size:12.5px}
+.banner{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+
+/* transport */
+.transport{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.play{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:#fff;cursor:pointer;display:grid;place-items:center;flex:none}
+.play svg{width:18px;height:18px;fill:currentColor}
+.readout{font:500 20px/1 var(--mono);font-variant-numeric:tabular-nums;min-width:96px}
+.readout small{display:block;font:500 11px/1.4 var(--mono);color:var(--muted);letter-spacing:.02em;margin-top:3px}
+.grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.grp .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--surface-2);color:var(--muted)}
+.media{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+#ytBox{width:320px;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden}
+#ytBox iframe{width:100%;height:100%;display:block}
+
+/* timeline */
+.tl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;position:relative;touch-action:pan-x pan-y}
+.tl-inner{position:relative;min-width:100%;--barpx:0px;--bar0:0px}
+.row{display:flex;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.lab{position:sticky;left:0;z-index:4;flex:none;width:var(--gut);box-sizing:border-box;background:var(--surface-2);border-right:1px solid var(--line);padding:0 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.lab small{font:500 10px var(--mono);opacity:.75;margin-left:auto}
+.lab.click{cursor:pointer}
+.lab.click:hover{color:var(--fg)}
+.lab.sel{color:var(--fg);box-shadow:inset 0 0 0 2px var(--focus)}
+.trk{position:relative;flex:none;height:100%}
+.gridbg .trk{background-image:repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px var(--barpx));background-position-x:var(--bar0)}
+.r-ruler{height:28px}.r-mk{height:30px}.r-tier{height:46px}.r-wave{height:66px}.r-inst{height:30px}.r-add{min-height:38px}
+.r-tier.act .lab{color:var(--fg);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.r-tier.act .lab.sel{box-shadow:inset 3px 0 0 var(--accent),inset 0 0 0 2px var(--focus)}
+.r-ruler .trk,.r-wave .trk{cursor:text}
+.tk{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
+.tk.min{top:65%}
+.tk b{position:absolute;left:4px;top:5px;font:500 11px var(--mono);color:var(--muted);white-space:nowrap}
+.sp{position:absolute;top:6px;bottom:6px;box-sizing:border-box;border:1.5px solid var(--cc);border-radius:5px;background:color-mix(in srgb,var(--cc) 20%,var(--surface));overflow:hidden;padding:0 7px;display:flex;align-items:center;font-size:12.5px;font-weight:500;white-space:nowrap;cursor:pointer}
+.sp.aux{border-style:dashed;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cc) 16%,var(--surface)) 0 5px,var(--surface) 5px 10px)}
+.sp.elide{clip-path:polygon(9px 0,100% 0,100% 100%,0 100%);padding-left:14px}
+.sp.sel{box-shadow:inset 0 0 0 2px var(--focus);z-index:1}
+.sp.hc::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:var(--cc)}
+.sp-l{overflow:hidden;text-overflow:ellipsis}
+.bnd{position:absolute;top:0;bottom:0;width:12px;margin-left:-6px;cursor:ew-resize;z-index:2}
+.bnd:hover::after{content:"";position:absolute;left:5px;top:3px;bottom:3px;width:2px;border-radius:1px;background:var(--focus)}
+.mk{position:absolute;top:7px;display:flex;align-items:center;gap:4px;cursor:grab;white-space:nowrap;z-index:2;margin-left:-8px}
+.mk-g{width:16px;height:16px;border-radius:4px;background:var(--mk);color:var(--surface);font:600 10px/16px var(--mono);text-align:center}
+.mk-l{font-size:12px;font-weight:500}
+.mk.sel .mk-g{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--focus)}
+.stem{position:absolute;top:58px;bottom:0;border-left:1px dashed var(--mk);opacity:.5;pointer-events:none;z-index:1}
+.is{position:absolute;top:7px;bottom:7px;border-radius:4px;background:var(--cc);opacity:.8;cursor:pointer}
+.is.sel{opacity:1;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--focus)}
+.is.hc{background-image:radial-gradient(circle at calc(100% - 7px) 50%,var(--surface) 0 2.5px,transparent 3px)}
+.ih{position:absolute;top:-4px;bottom:-4px;width:10px;cursor:ew-resize}
+.ih.l{left:-5px}.ih.r{right:-5px}
+.r-inst .trk{cursor:crosshair}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--cc);flex:none}
+.ph{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;z-index:3}
+.ph::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top:7px solid var(--accent)}
+.r-add .lab{flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding-block:6px}
+.r-add .btn{justify-content:center}
+.wavemsg{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);position:sticky}
+canvas#wv{display:block;height:66px}
+
+/* lower panels */
+.lower{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card h2{font:600 15px/1.2 var(--display);margin:0 0 2px}
+.eyebrow{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.meta{font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.stack{display:grid;gap:12px}
+.field{display:grid;gap:4px}
+.field>span{font-size:12px;color:var(--muted);font-weight:500}
+.field input[type=text],.field input[type=number],.field textarea,.field select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);width:100%;box-sizing:border-box}
+.field textarea{min-height:84px;resize:vertical;line-height:1.45}
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 9px;font-size:12px;cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.chip.sym{font-family:var(--mono);min-width:28px}
+.chipgroup{display:grid;gap:5px}
+.swatches{display:flex;flex-wrap:wrap;gap:6px}
+.sw{width:22px;height:22px;border-radius:5px;border:0;background:var(--cc);cursor:pointer}
+.sw.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--fg)}
+.checks{display:flex;flex-wrap:wrap;gap:8px 18px}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-4px -4px 12px;padding:0 4px}
+.tab{border:0;background:none;padding:8px 10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
+.cm{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 0 8px calc(var(--d,0) * 16px);border-bottom:1px solid var(--line);cursor:pointer}
+.cm:last-child{border-bottom:0}
+.cm:hover .cm-h{color:var(--focus)}
+.cm-h{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px}
+.cm-b{font-size:13px;color:var(--fg);margin-top:3px;max-width:65ch;overflow-wrap:anywhere}
+.cm .meta{font-weight:400}
+.keys{width:100%;border-collapse:collapse;font-size:13px}
+.keys td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.keys td:first-child{white-space:nowrap;padding-right:14px}
+.ro-label{font:600 18px/1.25 var(--display)}
+.ro-body{white-space:pre-wrap;max-width:65ch}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
+body.present .edit-only{display:none!important}
+body.present .transport{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+body.present .bnd,body.present .ih{display:none}
+.presentpill{display:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:600}
+body.present .presentpill{display:inline}
+@media (max-width:860px){.lower{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){:root{--gut:86px}.readout{font-size:17px;min-width:80px}.brand h1{font-size:19px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Listening Map</h1><span class="doc" id="docTitle"></span><span class="presentpill">Presentation</span></div>
+    <div class="tools">
+      <label class="btn edit-only" for="fAudio">Open audio</label>
+      <input type="file" id="fAudio" accept="audio/*,video/mp4" hidden>
+      <button class="btn edit-only" id="bYT" type="button">YouTube link</button>
+      <label class="btn" for="fOpen">Open analysis</label>
+      <input type="file" id="fOpen" accept=".json,application/json" hidden>
+      <span class="sep"></span>
+      <button class="btn pri" id="bExport" type="button">Export analysis</button>
+      <button class="btn" id="bReport" type="button">Text report</button>
+      <span class="sep"></span>
+      <label class="toggle"><input type="checkbox" id="present"> Present</label>
+    </div>
+  </header>
+
+  <form class="pop" id="ytPop" hidden>
+    <input type="text" id="ytUrl" placeholder="Paste a YouTube link, e.g. https://youtu.be/…" autocomplete="off">
+    <button class="btn pri" type="submit">Load video</button>
+    <button class="btn" type="button" id="ytCancel">Cancel</button>
+    <span class="note" style="flex-basis:100%">Starts a new analysis timed to the video. Save your current work first.</span>
+  </form>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="media"><div id="ytBox" hidden><div id="yt"></div></div></div>
+
+  <section class="transport" aria-label="Transport">
+    <button class="play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <div class="readout" id="readout">0:00.0<small>&nbsp;</small></div>
+    <div class="grp">
+      <button class="btn sm" data-skip="-10" type="button">−10s</button>
+      <button class="btn sm" data-skip="-1" type="button">−1s</button>
+      <button class="btn sm" data-skip="1" type="button">+1s</button>
+      <button class="btn sm" data-skip="10" type="button">+10s</button>
+    </div>
+    <span class="sep"></span>
+    <div class="grp"><span class="lbl">Zoom</span>
+      <button class="btn sm" id="zOut" type="button" aria-label="Zoom out">−</button>
+      <button class="btn sm" id="zFit" type="button">Fit</button>
+      <button class="btn sm" id="zIn" type="button" aria-label="Zoom in">+</button>
+    </div>
+    <span class="sep edit-only"></span>
+    <div class="grp edit-only"><span class="lbl">Edit</span>
+      <button class="btn sm" id="bSplit" type="button">Split <kbd>S</kbd></button>
+      <button class="btn sm" id="bGroup" type="button">Group <kbd>G</kbd></button>
+      <button class="btn sm" id="bMark" type="button">Marker <kbd>M</kbd></button>
+      <button class="btn sm" id="bUndo" type="button" aria-label="Undo">Undo</button>
+      <button class="btn sm" id="bRedo" type="button" aria-label="Redo">Redo</button>
+    </div>
+    <label class="toggle edit-only" title="Snap edits to the nearest beat when the measure grid is on"><input type="checkbox" id="snap"> Snap to beat</label>
+  </section>
+
+  <div class="tl" id="tl"><div class="tl-inner" id="inner"></div></div>
+
+  <div class="lower">
+    <section class="card" id="insp" aria-label="Inspector"></section>
+    <section class="card" aria-label="Analysis details">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="comments" aria-selected="true" type="button">Comments</button>
+        <button class="tab" role="tab" data-tab="info" aria-selected="false" type="button">Piece and grid</button>
+        <button class="tab" role="tab" data-tab="keys" aria-selected="false" type="button">Shortcuts</button>
+      </div>
+      <div id="tab-comments"></div>
+      <div id="tab-info" hidden></div>
+      <div id="tab-keys" hidden>
+        <table class="keys">
+          <tr><td><kbd>Space</kbd></td><td>Play or pause</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block</td></tr>
+          <tr><td><kbd>S</kbd></td><td>Split the active level at the playhead</td></tr>
+          <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
+          <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
+          <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
+          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
+          <tr><td><kbd>Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
+          <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></td><td>Zoom in, zoom out, fit</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo and redo (<kbd>⌘</kbd> on Mac)</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
+          <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd>Alt</kbd> to ignore snapping.</td></tr>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const COLORS = ['rose','amber','olive','green','teal','sky','blue','violet','plum','slate'];
+const TIER_NAMES = ['Phrases','Sections','Large form'];
+const MK_KINDS = {cadence:['C','Cadence'],modulation:['M','Modulation'],climax:['!','Climax'],texture:['T','Texture change'],elision:['E','Elision'],other:['•','Other']};
+const VOCAB = [
+  ['Song form',['Intro','Verse','Pre-chorus','Chorus','Post-chorus','Bridge','Break','Solo','Outro','Refrain']],
+  ['Classical form',['A','B','C','A′','Exposition','Transition','Development','Retransition','Recapitulation','Coda','Theme','Variation']],
+  ['Phrase and theme',['Presentation','Continuation','Antecedent','Consequent','Basic idea','Cadential','Sentence','Period']]
+];
+const SYMBOLS = ['⁒','➚','➙','➘','′','″'];
+const EPS = 1e-6;
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const gut = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gut')) || 120;
+const mk = (start, end, label = '', color = 'slate', o = {}) => ({id: uid(), start, end, label, color, aux: false, elide: false, comment: '', ...o});
+
+let S, pps = 10, sel = null, activeTier = 0, presenting = false, peaks = null, undoStack = [], redoStack = [], pendingAudio = null, waveMsg = '';
+
+/* ---------- time helpers ---------- */
+const dur = () => S.source.duration || 1;
+function fmt(t){ t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + s.toFixed(1).padStart(4, '0'); }
+function beatLen(){ return 60 / (S.grid.bpm || 120); }
+function barLen(){ return beatLen() * (S.grid.bpb || 4); }
+function mpos(t){
+  if (!S.grid.on) return '';
+  const rel = t - S.grid.offset;
+  if (rel < -EPS) return 'pickup';
+  const bi = Math.floor(rel / beatLen() + 1e-6);
+  return 'm. ' + (Math.floor(bi / S.grid.bpb) + 1) + ' b. ' + (bi % S.grid.bpb + 1);
+}
+function mbar(t){ if (!S.grid.on) return ''; const rel = t - S.grid.offset; return rel < -EPS ? 'pickup' : 'm. ' + (Math.floor(rel / barLen() + 1e-6) + 1); }
+function snapT(t, ev){
+  if (S.grid.on && S.grid.snap && !(ev && ev.altKey)){ const b = beatLen(); t = S.grid.offset + Math.round((t - S.grid.offset) / b) * b; }
+  return clamp(t, 0, dur());
+}
+
+/* ---------- history ---------- */
+const snapshot = () => JSON.stringify(S);
+function commit(prev){ undoStack.push(prev); if (undoStack.length > 300) undoStack.shift(); redoStack = []; }
+function edit(fn){ if (presenting) return; const prev = snapshot(); fn(); if (snapshot() !== prev) commit(prev); renderAll(); }
+function doUndo(){ if (!undoStack.length || presenting) return; redoStack.push(snapshot()); S = JSON.parse(undoStack.pop()); validateSel(); renderAll(); renderInfo(); }
+function doRedo(){ if (!redoStack.length || presenting) return; undoStack.push(snapshot()); S = JSON.parse(redoStack.pop()); validateSel(); renderAll(); renderInfo(); }
+function validateSel(){
+  activeTier = clamp(activeTier, 0, S.tiers.length - 1);
+  if (!sel) return;
+  if (sel.kind === 'span'){ const arr = S.tiers[sel.tier]; if (!arr){ sel = null; return; } sel.ids = sel.ids.filter(id => arr.some(s => s.id === id)); if (!sel.ids.length) sel = null; }
+  else if (sel.kind === 'tier'){ if (!S.tiers[sel.tier]) sel = null; }
+  else if (sel.kind === 'marker'){ if (!S.markers.some(m => m.id === sel.id)) sel = null; }
+  else if (sel.kind === 'inst'){ if (!S.instruments.some(i => i.id === sel.id)) sel = null; }
+  else if (sel.kind === 'ispan'){ const i = S.instruments.find(i => i.id === sel.inst); if (!i || !i.spans.some(s => s.id === sel.id)) sel = null; }
+}
+
+/* ---------- player ---------- */
+const P = {
+  kind: null, audio: new Audio(), yt: null, ytReady: false, _t: 0,
+  t(){ if (this.kind === 'audio') return this.audio.currentTime || 0; if (this.kind === 'yt' && this.ytReady) return this.yt.getCurrentTime() || 0; return this._t; },
+  playing(){ if (this.kind === 'audio') return !this.audio.paused; if (this.kind === 'yt' && this.ytReady) return this.yt.getPlayerState() === 1; return false; },
+  play(){ if (this.kind === 'audio') this.audio.play().catch(() => toast('Playback could not start. Try pressing play again.')); else if (this.kind === 'yt' && this.ytReady) this.yt.playVideo(); else toast('Load audio to hear the piece.'); },
+  pause(){ if (this.kind === 'audio') this.audio.pause(); else if (this.kind === 'yt' && this.ytReady) this.yt.pauseVideo(); },
+  toggle(){ this.playing() ? this.pause() : this.play(); },
+  seek(t){ t = clamp(t, 0, dur()); this._t = t; if (this.kind === 'audio') this.audio.currentTime = t; else if (this.kind === 'yt' && this.ytReady) this.yt.seekTo(t, true); },
+  useAudio(url){ this.stopYT(); this.kind = 'audio'; this.audio.src = url; this.audio.load(); },
+  stopYT(){ if (this.yt){ try { this.yt.destroy(); } catch(e){} this.yt = null; this.ytReady = false; $('#ytBox').hidden = true; $('#ytBox').innerHTML = '<div id="yt"></div>'; } },
+  none(){ this.stopYT(); this.audio.pause(); this.audio.removeAttribute('src'); this.kind = null; }
+};
+
+function loadYTApi(){
+  return new Promise((res, rej) => {
+    if (window.YT && YT.Player) return res();
+    const timer = setTimeout(() => rej(new Error('timeout')), 9000);
+    window.onYouTubeIframeAPIReady = () => { clearTimeout(timer); res(); };
+    const s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = () => { clearTimeout(timer); rej(new Error('blocked')); };
+    document.head.appendChild(s);
+  });
+}
+async function useYouTube(id, onReady){
+  P.none(); peaks = null; waveMsg = 'No waveform for YouTube sources';
+  try { await loadYTApi(); }
+  catch(e){
+    showBanner('YouTube playback is blocked in this preview window. It will work once the page is hosted on your own site. For now, use <b>Open audio</b> with a file.');
+    return;
+  }
+  $('#ytBox').hidden = false;
+  P.kind = 'yt';
+  P.yt = new YT.Player('yt', {
+    videoId: id, width: 320, height: 180, playerVars: {playsinline: 1, rel: 0, modestbranding: 1},
+    events: {
+      onReady: () => { P.ytReady = true; onReady && onReady(P.yt.getDuration(), (P.yt.getVideoData() || {}).title); },
+      onError: () => showBanner('That video could not be played here. Some videos block embedding; try another link or an audio file.')
+    }
+  });
+}
+function ytId(u){
+  u = u.trim();
+  const m = u.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{11}$/.test(u) ? u : null;
+}
+
+/* ---------- waveform ---------- */
+function computePeaks(buf, n = 8000){
+  const d = buf.getChannelData(0), step = Math.max(1, Math.floor(d.length / n)), out = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++){
+    let lo = 0, hi = 0; const a = i * step, b = Math.min(d.length, a + step);
+    for (let j = a; j < b; j += 4){ const v = d[j]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    out[i * 2] = lo; out[i * 2 + 1] = hi;
+  }
+  return out;
+}
+function drawWave(){
+  const c = $('#wv'); if (!c) return;
+  const W = dur() * pps, cw = Math.max(1, Math.min(Math.ceil(W), 14000)), dpr = Math.min(2, window.devicePixelRatio || 1), h = 66;
+  c.style.width = W + 'px'; c.width = Math.min(cw * dpr, 16000); c.height = h * dpr;
+  const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
+  const cs = getComputedStyle(document.documentElement);
+  g.fillStyle = cs.getPropertyValue('--wave').trim() || '#888';
+  const mid = c.height / 2;
+  if (!peaks){ g.fillRect(0, mid, c.width, Math.max(1, dpr)); return; }
+  const n = peaks.length / 2;
+  for (let x = 0; x < c.width; x++){
+    const a = Math.floor(x / c.width * n), b = Math.max(a + 1, Math.floor((x + 1) / c.width * n));
+    let lo = 0, hi = 0;
+    for (let i = a; i < b && i < n; i++){ if (peaks[i * 2] < lo) lo = peaks[i * 2]; if (peaks[i * 2 + 1] > hi) hi = peaks[i * 2 + 1]; }
+    const y1 = mid - hi * mid * .92, y2 = mid - lo * mid * .92;
+    g.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+  }
+}
+
+/* ---------- model operations ---------- */
+function splitTier(k, t){
+  const arr = S.tiers[k]; const i = arr.findIndex(s => t > s.start + 0.05 && t < s.end - 0.05);
+  if (i < 0) return null;
+  const s = arr[i]; const r = {...s, id: uid(), start: t, label: '', comment: '', elide: false};
+  s.end = t; arr.splice(i + 1, 0, r); return r;
+}
+function selSpans(){ if (!sel || sel.kind !== 'span') return []; return S.tiers[sel.tier].filter(s => sel.ids.includes(s.id)); }
+function cmdSplit(){
+  if (presenting) return;
+  const t = snapT(P.t()); let r = null;
+  edit(() => { r = splitTier(activeTier, t); if (r) sel = {kind: 'span', tier: activeTier, ids: [r.id]}; });
+  if (!r) toast('There is already a boundary at the playhead.');
+  else focusLabel();
+}
+function cmdGroup(){
+  if (presenting) return;
+  const sp = selSpans(); if (!sp.length){ toast('Select one or more adjacent blocks to group.'); return; }
+  const k = sel.tier, arr = S.tiers[k];
+  const idx = sp.map(s => arr.indexOf(s)).sort((a, b) => a - b);
+  for (let i = 1; i < idx.length; i++) if (idx[i] !== idx[i - 1] + 1){ toast('Grouped blocks must be next to each other.'); return; }
+  const start = arr[idx[0]].start, end = arr[idx[idx.length - 1]].end;
+  edit(() => {
+    if (!S.tiers[k + 1]){ S.tiers.push([mk(0, dur())]); S.tierNames[k + 1] = S.tierNames[k + 1] || TIER_NAMES[k + 1] || 'Level ' + (k + 2); }
+    const up = S.tiers[k + 1];
+    splitTier(k + 1, start); splitTier(k + 1, end);
+    const inside = up.filter(s => s.start >= start - 0.051 && s.end <= end + 0.051);
+    const first = inside[0]; first.start = start; first.end = end;
+    if (!first.label) first.color = arr[idx[0]].color;
+    S.tiers[k + 1] = up.filter(s => s === first || !inside.includes(s));
+    sel = {kind: 'span', tier: k + 1, ids: [first.id]}; activeTier = k + 1;
+  });
+  focusLabel();
+}
+function cmdJoin(dir){
+  const sp = selSpans(); if (!sp.length) return;
+  const k = sel.tier, arr = S.tiers[k], i = arr.indexOf(sp[0]);
+  if (dir < 0 && i === 0){ toast('This block has no neighbor on the left.'); return; }
+  if (dir > 0 && i === arr.length - 1){ toast('This block has no neighbor on the right.'); return; }
+  edit(() => {
+    if (dir < 0){ arr[i - 1].end = arr[i].end; arr.splice(i, 1); sel = {kind: 'span', tier: k, ids: [arr[i - 1].id]}; }
+    else { arr[i + 1].start = arr[i].start; arr.splice(i, 1); sel = {kind: 'span', tier: k, ids: [arr[i].id]}; }
+  });
+}
+function cmdMarker(){
+  if (presenting) return;
+  const t = snapT(P.t()); let m;
+  edit(() => { m = {id: uid(), time: t, label: '', kind: 'cadence', comment: ''}; S.markers.push(m); S.markers.sort((a, b) => a.time - b.time); sel = {kind: 'marker', id: m.id}; });
+  focusLabel();
+}
+function cmdDelete(dir){
+  if (presenting || !sel) return;
+  if (sel.kind === 'span') return cmdJoin(dir);
+  if (sel.kind === 'marker') return edit(() => { S.markers = S.markers.filter(m => m.id !== sel.id); sel = null; });
+  if (sel.kind === 'ispan') return edit(() => { const i = S.instruments.find(i => i.id === sel.inst); i.spans = i.spans.filter(s => s.id !== sel.id); sel = {kind: 'inst', id: i.id}; });
+}
+function selStart(){
+  if (!sel) return null;
+  if (sel.kind === 'span') return Math.min(...selSpans().map(s => s.start));
+  if (sel.kind === 'marker') return S.markers.find(m => m.id === sel.id).time;
+  if (sel.kind === 'ispan') return S.instruments.find(i => i.id === sel.inst).spans.find(s => s.id === sel.id).start;
+  return null;
+}
+function playFromSel(){ const t = selStart(); if (t == null){ toast('Select a block or marker first.'); return; } P.seek(t); P.play(); }
+function navSel(dx, dy, extend){
+  if (!sel || sel.kind !== 'span'){ const arr = S.tiers[activeTier]; const s = arr.find(s => P.t() >= s.start && P.t() < s.end) || arr[0]; sel = {kind: 'span', tier: activeTier, ids: [s.id]}; renderAll(); return; }
+  let k = sel.tier, arr = S.tiers[k];
+  const cur = arr.filter(s => sel.ids.includes(s.id));
+  if (dy){
+    k = clamp(k + dy, 0, S.tiers.length - 1); if (k === sel.tier) return;
+    const mid = (cur[0].start + cur[0].end) / 2;
+    const s = S.tiers[k].find(s => mid >= s.start && mid < s.end) || S.tiers[k][0];
+    sel = {kind: 'span', tier: k, ids: [s.id]}; activeTier = k;
+  } else {
+    const idxs = cur.map(s => arr.indexOf(s)); const edge = dx > 0 ? Math.max(...idxs) : Math.min(...idxs);
+    const n = clamp(edge + dx, 0, arr.length - 1);
+    sel = {kind: 'span', tier: k, ids: extend ? [...new Set([...sel.ids, arr[n].id])] : [arr[n].id]};
+  }
+  renderAll();
+}
+function focusLabel(){ requestAnimationFrame(() => { const el = $('#iLabel'); if (el && !presenting){ el.focus(); el.select(); } }); }
+
+/* ---------- rendering: timeline ---------- */
+const tl = $('#tl'), inner = $('#inner');
+function ticks(){
+  const W = dur() * pps; let h = '';
+  if (S.grid.on){
+    const bl = barLen(); let every = 1;
+    for (const n of [1, 2, 4, 8, 16, 32, 64]){ every = n; if (n * bl * pps >= 38) break; }
+    const minor = bl * pps >= 10;
+    for (let b = 0; ; b++){
+      const t = S.grid.offset + b * bl; if (t > dur() + EPS) break;
+      const x = t * pps;
+      if (b % every === 0) h += `<i class="tk" style="left:${x}px"><b>${b + 1}</b></i>`;
+      else if (minor) h += `<i class="tk min" style="left:${x}px"></i>`;
+    }
+  } else {
+    let step = 60; for (const n of [1, 2, 5, 10, 15, 30, 60, 120]){ step = n; if (n * pps >= 56) break; }
+    for (let t = 0; t <= dur() + EPS; t += step) h += `<i class="tk" style="left:${t * pps}px"><b>${fmt(t).replace(/\.0$/, '')}</b></i>`;
+    if (step >= 2 && pps * step / 5 >= 8) for (let t = step / 5; t < dur(); t += step / 5) if (Math.abs(t / step - Math.round(t / step)) > 1e-3) h += `<i class="tk min" style="left:${t * pps}px"></i>`;
+  }
+  return h;
+}
+function renderTimeline(){
+  const W = Math.max(1, dur() * pps), g = gut();
+  const gridOn = S.grid.on && barLen() * pps >= 6;
+  inner.classList.toggle('gridbg', gridOn);
+  if (gridOn){ inner.style.setProperty('--barpx', (barLen() * pps) + 'px'); inner.style.setProperty('--bar0', ((S.grid.offset % barLen()) * pps) + 'px'); }
+  let h = `<div class="row r-ruler"><div class="lab">${S.grid.on ? 'Measure' : 'Time'}</div><div class="trk" data-k="ruler" style="width:${W}px">${ticks()}</div></div>`;
+  h += `<div class="row r-mk"><div class="lab">Markers</div><div class="trk" data-k="mktrk" style="width:${W}px">`;
+  for (const m of S.markers){
+    const on = sel && sel.kind === 'marker' && sel.id === m.id;
+    h += `<div class="mk${on ? ' sel' : ''}" data-k="mk" data-id="${m.id}" style="left:${m.time * pps}px" title="${esc(MK_KINDS[m.kind][1] + ' at ' + fmt(m.time))}"><span class="mk-g">${MK_KINDS[m.kind][0]}</span><span class="mk-l">${esc(m.label)}</span></div>`;
+  }
+  h += `</div></div>`;
+  for (let k = S.tiers.length - 1; k >= 0; k--){
+    const arr = S.tiers[k], tsel = sel && sel.kind === 'tier' && sel.tier === k;
+    h += `<div class="row r-tier${k === activeTier ? ' act' : ''}"><div class="lab click${tsel ? ' sel' : ''}" data-k="tierlab" data-tier="${k}" title="Click to rename or make this the active level">${esc(S.tierNames[k] || 'Level ' + (k + 1))}<small>L${k + 1}</small></div><div class="trk" data-k="tier" data-tier="${k}" style="width:${W}px">`;
+    for (const s of arr){
+      const on = sel && sel.kind === 'span' && sel.tier === k && sel.ids.includes(s.id);
+      h += `<div class="sp c-${s.color}${s.aux ? ' aux' : ''}${s.elide ? ' elide' : ''}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="sp" data-tier="${k}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(1, (s.end - s.start) * pps)}px" title="${esc((s.label || 'Unlabeled') + ', ' + fmt(s.start) + ' to ' + fmt(s.end))}"><span class="sp-l">${esc(s.label)}</span></div>`;
+    }
+    for (let i = 0; i < arr.length - 1; i++) h += `<div class="bnd" data-k="bnd" data-tier="${k}" data-i="${i}" style="left:${arr[i].end * pps}px"></div>`;
+    h += `</div></div>`;
+  }
+  h += `<div class="row r-wave"><div class="lab">Audio</div><div class="trk" data-k="wave" style="width:${W}px"><canvas id="wv"></canvas>${!peaks && waveMsg ? `<span class="wavemsg" style="position:absolute">${esc(waveMsg)}</span>` : ''}</div></div>`;
+  for (const ins of S.instruments){
+    const isel = sel && sel.kind === 'inst' && sel.id === ins.id;
+    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="dot c-${ins.color}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
+    for (const s of ins.spans){
+      const on = sel && sel.kind === 'ispan' && sel.id === s.id;
+      h += `<div class="is c-${ins.color}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
+    }
+    h += `</div></div>`;
+  }
+  h += `<div class="row r-add edit-only"><div class="lab"><button class="btn sm" data-k="addinst" type="button">+ Instrument</button><button class="btn sm" data-k="addlevel" type="button">+ Level</button></div><div class="trk" style="width:${W}px"></div></div>`;
+  for (const m of S.markers) h += `<div class="stem" style="left:${g + m.time * pps}px"></div>`;
+  h += `<div class="ph" id="ph"></div>`;
+  inner.innerHTML = h;
+  inner.style.width = (g + W) + 'px';
+  drawWave(); placePH();
+}
+function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
+
+/* ---------- rendering: inspector ---------- */
+function swatches(cur){ return `<div class="swatches">${COLORS.map(c => `<button class="sw c-${c}${c === cur ? ' on' : ''}" data-act="color" data-c="${c}" type="button" aria-label="${c}"></button>`).join('')}</div>`; }
+function timesLine(a, b){ const bars = S.grid.on ? ` · ${mbar(a)} to ${mbar(b)}` : ''; return `${fmt(a)} to ${fmt(b)} · ${(b - a).toFixed(1)}s${bars}`; }
+function renderInspector(){
+  const el = $('#insp');
+  if (!sel){
+    el.innerHTML = `<div class="eyebrow">Inspector</div><h2>Nothing selected</h2>
+      <p class="note" style="max-width:60ch">Click a block, marker, or instrument entry to edit it. While listening, press <kbd>S</kbd> at each formal boundary to split the active level (<b>${esc(S.tierNames[activeTier] || 'Level ' + (activeTier + 1))}</b>), then select neighboring blocks and press <kbd>G</kbd> to group them into a larger unit on the level above.</p>`;
+    return;
+  }
+  if (presenting) return renderInspectorRO(el);
+  if (sel.kind === 'span'){
+    const sp = selSpans();
+    if (sp.length > 1){
+      const a = Math.min(...sp.map(s => s.start)), b = Math.max(...sp.map(s => s.end));
+      el.innerHTML = `<div class="stack"><div><div class="eyebrow">${esc(S.tierNames[sel.tier])} · ${sp.length} blocks</div><h2>Multiple blocks selected</h2><div class="meta">${timesLine(a, b)}</div></div>
+        <div class="field"><span>Color for all</span>${swatches(null)}</div>
+        <div class="actions"><button class="btn pri" data-act="group" type="button">Group into one block above <kbd>G</kbd></button><button class="btn" data-act="playsel" type="button">Play from start</button></div></div>`;
+    } else {
+      const s = sp[0];
+      el.innerHTML = `<div class="stack">
+        <div><div class="eyebrow">${esc(S.tierNames[sel.tier] || 'Level ' + (sel.tier + 1))} · Level ${sel.tier + 1}</div><h2>${esc(s.label) || 'Unlabeled block'}</h2><div class="meta">${timesLine(s.start, s.end)}</div></div>
+        <label class="field"><span>Label</span><input type="text" id="iLabel" value="${esc(s.label)}" placeholder="e.g. Verse 1, A, Presentation" autocomplete="off"></label>
+        <div class="chipgroup">${VOCAB.map(([name, words]) => `<div class="eyebrow" style="margin-top:2px">${name}</div><div class="chips">${words.map(w => `<button class="chip" data-act="vocab" data-w="${esc(w)}" type="button">${esc(w)}</button>`).join('')}</div>`).join('')}
+          <div class="eyebrow" style="margin-top:2px">Symbols (added to the label)</div><div class="chips">${SYMBOLS.map(w => `<button class="chip sym" data-act="sym" data-w="${w}" type="button">${w}</button>`).join('')}</div></div>
+        <div class="field"><span>Color</span>${swatches(s.color)}</div>
+        <div class="checks">
+          <label class="toggle"><input type="checkbox" id="iAux"${s.aux ? ' checked' : ''}> Auxiliary (intro, transition, coda, tag)</label>
+          <label class="toggle"><input type="checkbox" id="iElide"${s.elide ? ' checked' : ''}> Elided with the previous block</label>
+        </div>
+        <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="What happens here? Cite what you hear: texture, harmony, cadence, instrumentation.">${esc(s.comment)}</textarea></label>
+        <div class="actions">
+          <button class="btn" data-act="playsel" type="button">Play from here <kbd>Ctrl Space</kbd></button>
+          <button class="btn" data-act="split" type="button">Split at playhead</button>
+          <button class="btn" data-act="group" type="button">Group up</button>
+          <button class="btn" data-act="joinl" type="button">Join left</button>
+          <button class="btn" data-act="joinr" type="button">Join right</button>
+        </div></div>`;
+      bindField($('#iLabel'), v => { s.label = v; });
+      bindField($('#iComment'), v => { s.comment = v; });
+      $('#iAux').onchange = e => edit(() => { s.aux = e.target.checked; });
+      $('#iElide').onchange = e => edit(() => { s.elide = e.target.checked; });
+    }
+  } else if (sel.kind === 'marker'){
+    const m = S.markers.find(m => m.id === sel.id);
+    el.innerHTML = `<div class="stack">
+      <div><div class="eyebrow">Marker · ${MK_KINDS[m.kind][1]}</div><h2>${esc(m.label) || 'Unlabeled marker'}</h2><div class="meta">${fmt(m.time)}${S.grid.on ? ' · ' + mpos(m.time) : ''}</div></div>
+      <div class="row2">
+        <label class="field"><span>Label</span><input type="text" id="iLabel" value="${esc(m.label)}" placeholder="e.g. PAC, to V, climax" autocomplete="off"></label>
+        <label class="field"><span>Type</span><select id="iKind">${Object.entries(MK_KINDS).map(([k, v]) => `<option value="${k}"${k === m.kind ? ' selected' : ''}>${v[1]}</option>`).join('')}</select></label>
+      </div>
+      <div class="chips">${['PAC','IAC','HC','DC','PC','V:HC','to V','to vi','Climax','Retransition'].map(w => `<button class="chip" data-act="vocab" data-w="${w}" type="button">${w}</button>`).join('')}</div>
+      <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="Describe the moment.">${esc(m.comment)}</textarea></label>
+      <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="mkhere" type="button">Move to playhead</button><button class="btn" data-act="del" type="button">Delete marker</button></div></div>`;
+    bindField($('#iLabel'), v => { m.label = v; });
+    bindField($('#iComment'), v => { m.comment = v; });
+    $('#iKind').onchange = e => edit(() => { m.kind = e.target.value; });
+  } else if (sel.kind === 'tier'){
+    const k = sel.tier;
+    el.innerHTML = `<div class="stack"><div><div class="eyebrow">Level ${k + 1} of ${S.tiers.length}</div><h2>${esc(S.tierNames[k])}</h2><div class="meta">${S.tiers[k].length} blocks · active level for splitting</div></div>
+      <label class="field"><span>Level name</span><input type="text" id="iLabel" value="${esc(S.tierNames[k])}" autocomplete="off"></label>
+      <div class="actions">${S.tiers.length > 1 ? `<button class="btn" data-act="rmlevel" type="button">Remove this level</button>` : ''}</div></div>`;
+    bindField($('#iLabel'), v => { S.tierNames[k] = v; });
+  } else if (sel.kind === 'inst'){
+    const ins = S.instruments.find(i => i.id === sel.id);
+    el.innerHTML = `<div class="stack"><div><div class="eyebrow">Instrument</div><h2>${esc(ins.name)}</h2><div class="meta">${ins.spans.length} ${ins.spans.length === 1 ? 'entry' : 'entries'} · drag across its lane to add more</div></div>
+      <label class="field"><span>Name</span><input type="text" id="iLabel" value="${esc(ins.name)}" autocomplete="off"></label>
+      <div class="field"><span>Color</span>${swatches(ins.color)}</div>
+      <div class="actions"><button class="btn" data-act="enter" type="button">Enters at playhead</button><button class="btn" data-act="exit" type="button">Exits at playhead</button><button class="btn" data-act="rminst" type="button">Delete instrument</button></div></div>`;
+    bindField($('#iLabel'), v => { ins.name = v; });
+  } else if (sel.kind === 'ispan'){
+    const ins = S.instruments.find(i => i.id === sel.inst), s = ins.spans.find(s => s.id === sel.id);
+    el.innerHTML = `<div class="stack"><div><div class="eyebrow">Instrument entry</div><h2>${esc(ins.name)}</h2><div class="meta">${timesLine(s.start, s.end)}</div></div>
+      <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="Role in the texture: melody, countermelody, pad, rhythm…">${esc(s.comment || '')}</textarea></label>
+      <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="del" type="button">Delete entry</button></div></div>`;
+    bindField($('#iComment'), v => { s.comment = v; });
+  }
+}
+function renderInspectorRO(el){
+  let label = '', meta = '', body = '', eyebrow = '';
+  if (sel.kind === 'span'){ const s = selSpans()[0]; eyebrow = S.tierNames[sel.tier]; label = s.label || 'Unlabeled block'; meta = timesLine(s.start, s.end) + (s.aux ? ' · auxiliary' : '') + (s.elide ? ' · elided' : ''); body = s.comment; }
+  else if (sel.kind === 'marker'){ const m = S.markers.find(m => m.id === sel.id); eyebrow = MK_KINDS[m.kind][1]; label = m.label || 'Marker'; meta = fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''); body = m.comment; }
+  else if (sel.kind === 'ispan'){ const ins = S.instruments.find(i => i.id === sel.inst), s = ins.spans.find(s => s.id === sel.id); eyebrow = 'Instrument'; label = ins.name; meta = timesLine(s.start, s.end); body = s.comment; }
+  else if (sel.kind === 'inst'){ const ins = S.instruments.find(i => i.id === sel.id); eyebrow = 'Instrument'; label = ins.name; meta = ins.spans.map(s => fmt(s.start) + ' to ' + fmt(s.end)).join(', '); }
+  else { eyebrow = 'Level'; label = S.tierNames[sel.tier]; }
+  el.innerHTML = `<div class="stack"><div><div class="eyebrow">${esc(eyebrow)}</div><div class="ro-label">${esc(label)}</div><div class="meta">${esc(meta)}</div></div>${body ? `<div class="ro-body">${esc(body)}</div>` : ''}${selStart() != null ? `<div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button></div>` : ''}</div>`;
+}
+function bindField(el, apply){
+  if (!el) return; let prev = null;
+  el.addEventListener('focus', () => { prev = snapshot(); });
+  el.addEventListener('input', () => { if (presenting) return; apply(el.value); renderTimeline(); renderComments(); updateDocTitle(); });
+  el.addEventListener('change', () => { if (prev && prev !== snapshot()) commit(prev); prev = snapshot(); });
+}
+$('#insp').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'playsel') return playFromSel();
+  if (presenting) return;
+  if (a === 'color') return edit(() => {
+    if (sel.kind === 'span') selSpans().forEach(s => s.color = b.dataset.c);
+    else if (sel.kind === 'inst') S.instruments.find(i => i.id === sel.id).color = b.dataset.c;
+  });
+  if (a === 'vocab') return edit(() => { target().label = b.dataset.w; });
+  if (a === 'sym') return edit(() => { const t = target(); t.label = (t.label || '') + b.dataset.w; });
+  if (a === 'group') return cmdGroup();
+  if (a === 'split') return cmdSplit();
+  if (a === 'joinl') return cmdJoin(-1);
+  if (a === 'joinr') return cmdJoin(1);
+  if (a === 'del') return cmdDelete(-1);
+  if (a === 'mkhere') return edit(() => { const m = S.markers.find(m => m.id === sel.id); m.time = snapT(P.t()); S.markers.sort((x, y) => x.time - y.time); });
+  if (a === 'rmlevel') return edit(() => { S.tiers.splice(sel.tier, 1); S.tierNames.splice(sel.tier, 1); sel = null; validateSel(); });
+  if (a === 'rminst') return edit(() => { S.instruments = S.instruments.filter(i => i.id !== sel.id); sel = null; });
+  if (a === 'enter') return edit(() => {
+    const ins = S.instruments.find(i => i.id === sel.id), t = snapT(P.t());
+    if (ins.spans.some(s => t >= s.start && t < s.end)){ toast(ins.name + ' is already playing here.'); return; }
+    const next = ins.spans.filter(s => s.start > t).sort((a, b) => a.start - b.start)[0];
+    ins.spans.push({id: uid(), start: t, end: next ? next.start : dur(), comment: ''}); ins.spans.sort((a, b) => a.start - b.start);
+  });
+  if (a === 'exit') return edit(() => {
+    const ins = S.instruments.find(i => i.id === sel.id), t = snapT(P.t());
+    const s = ins.spans.find(s => t > s.start && t <= s.end); if (!s){ toast(ins.name + ' is not playing at the playhead.'); return; } s.end = t;
+  });
+});
+function target(){ if (sel.kind === 'span') return selSpans()[0]; if (sel.kind === 'marker') return S.markers.find(m => m.id === sel.id); return {}; }
+
+/* ---------- rendering: comments, info ---------- */
+function renderComments(){
+  const out = [];
+  const walk = (k, a, b, depth) => {
+    if (k < 0) return;
+    for (const s of S.tiers[k]){
+      const mid = (s.start + s.end) / 2; if (mid < a || mid >= b) continue;
+      if (s.comment) out.push({t: s.start, depth, head: s.label || 'Unlabeled', sub: (S.tierNames[k] || 'Level ' + (k + 1)) + ' · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: s.color});
+      walk(k - 1, s.start, s.end, s.comment ? depth + 1 : depth);
+    }
+  };
+  walk(S.tiers.length - 1, 0, dur() + 1, 0);
+  for (const m of S.markers) if (m.comment) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0]});
+  for (const i of S.instruments) for (const s of i.spans) if (s.comment) out.push({t: s.start, depth: 0, head: i.name, sub: 'Instrument · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: i.color});
+  const el = $('#tab-comments');
+  el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${o.mk ? `<span class="mk-g">${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`}${esc(o.head)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
+    : `<p class="note">No commentary yet. Select any block, marker, or instrument entry and write in its Commentary box. It collects here in formal order, larger sections first.</p>`;
+}
+$('#tab-comments').addEventListener('click', e => { const b = e.target.closest('[data-seek]'); if (b){ P.seek(+b.dataset.seek); scrollTo(+b.dataset.seek); } });
+
+function renderInfo(){
+  const el = $('#tab-info'), g = S.grid, ro = presenting ? ' disabled' : '';
+  el.innerHTML = `<div class="stack">
+    <div class="row2">
+      <label class="field"><span>Title</span><input type="text" id="mTitle" value="${esc(S.meta.title)}"${ro}></label>
+      <label class="field"><span>Composer or artist</span><input type="text" id="mComposer" value="${esc(S.meta.composer)}"${ro}></label>
+    </div>
+    <label class="field"><span>Analyst (student name)</span><input type="text" id="mStudent" value="${esc(S.meta.student)}"${ro}></label>
+    <label class="field"><span>Overall notes</span><textarea id="mNotes" placeholder="Summarize the form, e.g. verse and chorus form with a contrasting bridge."${ro}>${esc(S.meta.notes)}</textarea></label>
+    <div class="meta">Source: ${esc(S.source.type === 'youtube' ? 'YouTube ' + S.source.youtubeId : S.source.name)} · ${fmt(dur())}</div>
+    <div><div class="eyebrow">Measure grid</div><p class="note" style="margin:2px 0 8px">Turn this on to count in measures instead of seconds. Set the tempo and where m. 1 begins.</p>
+      <div class="checks" style="margin-bottom:10px"><label class="toggle"><input type="checkbox" id="gOn"${g.on ? ' checked' : ''}${ro}> Show measures</label></div>
+      <div class="row2">
+        <label class="field"><span>Tempo (BPM)</span><input type="number" id="gBpm" min="20" max="320" step="0.1" value="${g.bpm}"${ro}></label>
+        <label class="field"><span>Beats per measure</span><input type="number" id="gBpb" min="1" max="16" step="1" value="${g.bpb}"${ro}></label>
+        <label class="field"><span>m. 1 starts at (sec)</span><input type="number" id="gOff" min="0" step="0.01" value="${g.offset}"${ro}></label>
+      </div>
+      <div class="actions edit-only" style="margin-top:8px"><button class="btn" id="gTap" type="button">Tap tempo</button><button class="btn" id="gHere" type="button">Start m. 1 at playhead</button></div>
+    </div></div>`;
+  if (presenting) return;
+  bindField($('#mTitle'), v => { S.meta.title = v; });
+  bindField($('#mComposer'), v => { S.meta.composer = v; });
+  bindField($('#mStudent'), v => { S.meta.student = v; });
+  bindField($('#mNotes'), v => { S.meta.notes = v; });
+  $('#gOn').onchange = e => edit(() => { S.grid.on = e.target.checked; });
+  const num = (id, key, lo, hi) => { const el = $(id); el.onchange = () => { const v = parseFloat(el.value); if (isFinite(v)) edit(() => { S.grid[key] = clamp(v, lo, hi); }); }; };
+  num('#gBpm', 'bpm', 20, 320); num('#gBpb', 'bpb', 1, 16); num('#gOff', 'offset', 0, dur());
+  $('#gHere').onclick = () => { edit(() => { S.grid.offset = +P.t().toFixed(2); S.grid.on = true; }); renderInfo(); };
+  let taps = [];
+  $('#gTap').onclick = () => {
+    const now = performance.now(); if (taps.length && now - taps[taps.length - 1] > 2000) taps = [];
+    taps.push(now); if (taps.length > 9) taps.shift();
+    if (taps.length >= 3){ const bpm = +(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1))).toFixed(1); S.grid.bpm = bpm; $('#gBpm').value = bpm; renderTimeline(); }
+    $('#gTap').textContent = taps.length < 3 ? 'Keep tapping…' : 'Tap tempo (' + S.grid.bpm + ')';
+  };
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t));
+  ['comments', 'info', 'keys'].forEach(n => $('#tab-' + n).hidden = n !== t.dataset.tab);
+});
+
+function updateDocTitle(){ $('#docTitle').textContent = [S.meta.title, S.meta.composer].filter(Boolean).join(' · '); }
+function renderAll(){ validateSel(); renderTimeline(); renderInspector(); renderComments(); updateDocTitle(); $('#snap').checked = !!S.grid.snap; $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; }
+
+/* ---------- pointer interaction ---------- */
+function tAt(ev){ return clamp((ev.clientX - inner.getBoundingClientRect().left - gut()) / pps, 0, dur()); }
+function drag(ev, move, opts = {}){
+  ev.preventDefault();
+  const prev = snapshot(); let moved = false; const x0 = ev.clientX;
+  const mv = e => { if (!moved && Math.abs(e.clientX - x0) < 3) return; moved = true; move(e); if (!opts.scrub) renderTimeline(); };
+  const up = e => {
+    removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+    opts.end && opts.end(moved, e);
+    if (!opts.scrub){ if (moved && snapshot() !== prev) commit(prev); renderAll(); }
+  };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+}
+inner.addEventListener('pointerdown', ev => {
+  if (ev.button > 0) return;
+  const el = ev.target.closest('[data-k]'); if (!el) return;
+  const k = el.dataset.k;
+  if (k === 'addinst' || k === 'addlevel') return;
+  if (k === 'ruler' || k === 'wave' || k === 'mktrk'){
+    P.seek(tAt(ev)); placePH();
+    return drag(ev, e => { P.seek(tAt(e)); placePH(); }, {scrub: true});
+  }
+  if (k === 'sp'){
+    const tier = +el.dataset.tier, id = el.dataset.id;
+    if (ev.shiftKey && sel && sel.kind === 'span' && sel.tier === tier){
+      const arr = S.tiers[tier], idx = [...sel.ids.map(i => arr.findIndex(s => s.id === i)), arr.findIndex(s => s.id === id)];
+      const a = Math.min(...idx), b = Math.max(...idx); sel.ids = arr.slice(a, b + 1).map(s => s.id);
+    } else sel = {kind: 'span', tier, ids: [id]};
+    activeTier = tier; renderAll(); return;
+  }
+  if (k === 'tierlab'){ sel = {kind: 'tier', tier: +el.dataset.tier}; activeTier = +el.dataset.tier; renderAll(); return; }
+  if (k === 'instlab'){ sel = {kind: 'inst', id: el.dataset.id}; renderAll(); return; }
+  if (k === 'mk'){
+    sel = {kind: 'marker', id: el.dataset.id}; renderAll();
+    if (presenting) return;
+    const m = S.markers.find(m => m.id === el.dataset.id);
+    return drag(ev, e => { m.time = snapT(tAt(e), e); }, {end: () => S.markers.sort((a, b) => a.time - b.time)});
+  }
+  if (presenting) { if (k === 'is'){ sel = {kind: 'ispan', inst: el.dataset.inst, id: el.dataset.id}; renderAll(); } return; }
+  if (k === 'bnd'){
+    const arr = S.tiers[+el.dataset.tier], i = +el.dataset.i;
+    return drag(ev, e => { const t = clamp(snapT(tAt(e), e), arr[i].start + 0.1, arr[i + 1].end - 0.1); arr[i].end = arr[i + 1].start = t; });
+  }
+  if (k === 'ih'){
+    ev.stopPropagation();
+    const ins = S.instruments.find(i => i.id === el.dataset.inst), s = ins.spans.find(s => s.id === el.dataset.id), side = el.dataset.side;
+    sel = {kind: 'ispan', inst: ins.id, id: s.id};
+    return drag(ev, e => { const t = snapT(tAt(e), e); if (side === 'l') s.start = clamp(t, 0, s.end - 0.1); else s.end = clamp(t, s.start + 0.1, dur()); }, {end: () => ins.spans.sort((a, b) => a.start - b.start)});
+  }
+  if (k === 'is'){ sel = {kind: 'ispan', inst: el.dataset.inst, id: el.dataset.id}; renderAll(); return; }
+  if (k === 'itrk'){
+    const ins = S.instruments.find(i => i.id === el.dataset.id), t0 = snapT(tAt(ev), ev);
+    const s = {id: uid(), start: t0, end: t0, comment: ''}; let added = false;
+    return drag(ev, e => {
+      if (!added){ ins.spans.push(s); added = true; }
+      const t = snapT(tAt(e), e); s.start = Math.min(t0, t); s.end = Math.max(t0, t);
+    }, {end: moved => {
+      if (!moved || s.end - s.start < 0.15){ ins.spans = ins.spans.filter(x => x !== s); sel = {kind: 'inst', id: ins.id}; }
+      else { ins.spans.sort((a, b) => a.start - b.start); sel = {kind: 'ispan', inst: ins.id, id: s.id}; }
+    }});
+  }
+});
+inner.addEventListener('dblclick', e => { if (e.target.closest('.sp, .mk')) focusLabel(); });
+inner.addEventListener('click', e => {
+  const b = e.target.closest('[data-k="addinst"],[data-k="addlevel"]'); if (!b) return;
+  if (b.dataset.k === 'addinst') edit(() => {
+    const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], spans: []};
+    S.instruments.push(ins); sel = {kind: 'inst', id: ins.id};
+  });
+  else edit(() => { const k = S.tiers.length; S.tiers.push([mk(0, dur())]); S.tierNames[k] = TIER_NAMES[k] || 'Level ' + (k + 1); sel = {kind: 'tier', tier: k}; });
+  if (b.dataset.k === 'addinst') focusLabel();
+});
+
+/* ---------- zoom, scroll, transport ---------- */
+function visW(){ return tl.clientWidth - gut(); }
+function fit(){ pps = Math.max(0.5, (visW() - 8) / dur()); }
+function zoom(f){ const t = P.t(); pps = clamp(pps * f, 0.5, 600); renderTimeline(); tl.scrollLeft = t * pps - visW() / 2; }
+function scrollTo(t){ const x = t * pps; if (x < tl.scrollLeft || x > tl.scrollLeft + visW() - 30) tl.scrollLeft = x - visW() * 0.25; }
+$('#zIn').onclick = () => zoom(1.5); $('#zOut').onclick = () => zoom(1 / 1.5); $('#zFit').onclick = () => { fit(); renderTimeline(); };
+document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { P.seek(P.t() + +b.dataset.skip); scrollTo(P.t()); });
+$('#bPlay').onclick = () => P.toggle();
+$('#bSplit').onclick = cmdSplit; $('#bGroup').onclick = cmdGroup; $('#bMark').onclick = cmdMarker;
+$('#bUndo').onclick = doUndo; $('#bRedo').onclick = doRedo;
+$('#snap').onchange = e => edit(() => { S.grid.snap = e.target.checked; if (e.target.checked && !S.grid.on) toast('Snapping uses the measure grid. Turn it on under Piece and grid.'); });
+$('#present').onchange = e => { presenting = e.target.checked; document.body.classList.toggle('present', presenting); renderAll(); renderInfo(); };
+
+let wasPlaying = null;
+(function loop(){
+  const t = P.t(), playing = P.playing();
+  placePH();
+  const r = $('#readout'); const pos = mpos(t);
+  r.innerHTML = fmt(t) + '<small>' + (pos || '&nbsp;') + '</small>';
+  if (playing !== wasPlaying){ $('#playIcon').innerHTML = playing ? '<path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/>' : '<path d="M7 4.5v15l13-7.5z"/>'; $('#bPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play'); wasPlaying = playing; }
+  if (playing){ const x = t * pps; if (x > tl.scrollLeft + visW() - 40 || x < tl.scrollLeft) tl.scrollLeft = x - 40; }
+  requestAnimationFrame(loop);
+})();
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select'){ if (e.key === 'Escape') e.target.blur(); return; }
+  const mod = e.ctrlKey || e.metaKey;
+  if (e.key === ' '){ e.preventDefault(); return mod ? playFromSel() : P.toggle(); }
+  if (mod && (e.key === 'z' || e.key === 'Z')){ e.preventDefault(); return e.shiftKey ? doRedo() : doUndo(); }
+  if (mod && (e.key === 'y' || e.key === 'Y')){ e.preventDefault(); return doRedo(); }
+  if (mod && e.shiftKey && (e.key === 'd' || e.key === 'D')){ e.preventDefault(); return cmdDelete(-1); }
+  if (e.altKey && e.key.startsWith('Arrow')){ e.preventDefault(); const m = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1]}[e.key]; return navSel(m[0], m[1], e.shiftKey); }
+  if (mod) return;
+  switch (e.key){
+    case 'ArrowRight': case 'ArrowLeft': e.preventDefault(); P.seek(P.t() + (e.key === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 1 : 10)); scrollTo(P.t()); break;
+    case 's': case 'S': cmdSplit(); break;
+    case 'g': case 'G': cmdGroup(); break;
+    case 'm': case 'M': cmdMarker(); break;
+    case 'Delete': e.preventDefault(); cmdDelete(-1); break;
+    case 'Backspace': e.preventDefault(); cmdDelete(1); break;
+    case '+': case '=': zoom(1.5); break;
+    case '-': case '_': zoom(1 / 1.5); break;
+    case '0': fit(); renderTimeline(); break;
+    case 'Escape': sel = null; renderAll(); break;
+  }
+});
+
+/* ---------- files ---------- */
+function blankState(src){
+  return {app: 'listening-map', version: 1,
+    meta: {title: (src.name || '').replace(/\.[^.]+$/, ''), composer: '', student: '', notes: ''},
+    source: src, grid: {on: false, bpm: 120, bpb: 4, offset: 0, snap: false},
+    tierNames: ['Phrases'], tiers: [[mk(0, src.duration)]], markers: [], instruments: []};
+}
+function startNew(src){ S = blankState(src); undoStack = []; redoStack = []; sel = null; activeTier = 0; hideBanner(); fit(); renderAll(); renderInfo(); tl.scrollLeft = 0; }
+async function decodePeaks(arrayBuf){
+  try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const b = await ac.decodeAudioData(arrayBuf); ac.close && ac.close(); return {peaks: computePeaks(b), duration: b.duration}; }
+  catch(e){ return null; }
+}
+$('#fAudio').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  await attachAudioFile(f, !pendingAudio);
+};
+async function attachAudioFile(f, fresh){
+  const url = URL.createObjectURL(f);
+  P.useAudio(url); peaks = null; waveMsg = 'Reading waveform…'; if (!fresh) renderTimeline();
+  const d = await decodePeaks(await f.arrayBuffer());
+  let duration = d ? d.duration : await new Promise(r => { P.audio.onloadedmetadata = () => r(P.audio.duration); P.audio.onerror = () => r(0); });
+  if (!duration){ toast('That file could not be read as audio.'); P.none(); return; }
+  peaks = d ? d.peaks : null; waveMsg = d ? '' : 'Waveform unavailable for this format';
+  if (fresh) startNew({type: 'file', name: f.name, duration});
+  else {
+    if (Math.abs(duration - dur()) > 2) toast(`This audio is ${fmt(duration)} long; the analysis expects ${fmt(dur())}. Check that it is the same recording.`);
+    S.source.name = f.name; pendingAudio = null; hideBanner(); renderAll();
+  }
+}
+$('#bYT').onclick = () => { $('#ytPop').hidden = !$('#ytPop').hidden; if (!$('#ytPop').hidden) $('#ytUrl').focus(); };
+$('#ytCancel').onclick = () => { $('#ytPop').hidden = true; };
+$('#ytPop').onsubmit = e => {
+  e.preventDefault();
+  const id = ytId($('#ytUrl').value); if (!id){ toast('That does not look like a YouTube link.'); return; }
+  $('#ytPop').hidden = true; pendingAudio = null; hideBanner();
+  useYouTube(id, (d, title) => startNew({type: 'youtube', youtubeId: id, name: title || 'YouTube ' + id, duration: d || 1}));
+};
+$('#fOpen').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let data; try { data = JSON.parse(await f.text()); } catch(err){ toast('That file is not a Listening Map analysis.'); return; }
+  if (!data || data.app !== 'listening-map' || !Array.isArray(data.tiers)){ toast('That file is not a Listening Map analysis.'); return; }
+  S = data; S.markers ||= []; S.instruments ||= []; S.tierNames ||= []; S.grid ||= {on: false, bpm: 120, bpb: 4, offset: 0, snap: false}; S.meta ||= {title: '', composer: '', student: '', notes: ''};
+  undoStack = []; redoStack = []; sel = null; activeTier = 0; peaks = null; P.none(); P._t = 0;
+  if (S.source.type === 'youtube'){ waveMsg = 'No waveform for YouTube sources'; hideBanner(); useYouTube(S.source.youtubeId); }
+  else if (S.source.type === 'demo'){ hideBanner(); loadDemoAudio(); }
+  else { pendingAudio = S.source.name; waveMsg = 'Audio not loaded'; showBanner(`This analysis was made with <b>${esc(S.source.name)}</b>. Load that file to hear it. <label class="btn sm" for="fAudio">Choose audio file</label>`); }
+  fit(); renderAll(); renderInfo(); tl.scrollLeft = 0;
+  toast('Opened ' + (S.meta.student ? S.meta.student + '’s analysis' : f.name));
+};
+
+function slug(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40); }
+function baseName(){ return [slug(S.meta.title) || 'analysis', slug(S.meta.student)].filter(Boolean).join('_'); }
+async function offerFile(name, text){
+  let dl = null;
+  try { if (window.claude && window.claude.use) dl = await window.claude.use('downloads'); } catch(e){}
+  if (dl){
+    try { await dl.save({filename: name, data: text}); toast('Saved ' + name); }
+    catch(e){ if (e && e.code !== 'declined') toast('The file could not be saved here (' + (e.code || 'error') + ').'); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type: 'text/plain'})); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+$('#bExport').onclick = () => offerFile(baseName() + '.listening-map.json', JSON.stringify(S, null, 2));
+$('#bReport').onclick = () => offerFile(baseName() + '.txt', report());
+function report(){
+  const L = [], range = (a, b) => fmt(a) + ' to ' + fmt(b) + (S.grid.on ? ` (${mbar(a)} to ${mbar(b)})` : '');
+  L.push('LISTENING MAP ANALYSIS', '');
+  L.push('Title: ' + (S.meta.title || ''), 'Composer/artist: ' + (S.meta.composer || ''), 'Analyst: ' + (S.meta.student || ''));
+  L.push('Source: ' + (S.source.type === 'youtube' ? 'https://youtu.be/' + S.source.youtubeId : S.source.name) + ' (' + fmt(dur()) + ')');
+  if (S.grid.on) L.push(`Measure grid: ${S.grid.bpm} BPM, ${S.grid.bpb} beats per measure, m. 1 at ${S.grid.offset}s`);
+  if (S.meta.notes) L.push('', 'OVERALL NOTES', S.meta.notes);
+  for (let k = S.tiers.length - 1; k >= 0; k--){
+    L.push('', (S.tierNames[k] || 'Level ' + (k + 1)).toUpperCase() + ' (level ' + (k + 1) + ')');
+    for (const s of S.tiers[k]){
+      const flags = [s.aux && 'auxiliary', s.elide && 'elided'].filter(Boolean).join(', ');
+      L.push('  ' + range(s.start, s.end) + '  ' + (s.label || '(unlabeled)') + (flags ? ' [' + flags + ']' : ''));
+      if (s.comment) L.push(...s.comment.split('\n').map(x => '      ' + x));
+    }
+  }
+  if (S.markers.length){ L.push('', 'MARKERS'); for (const m of S.markers){ L.push('  ' + fmt(m.time) + (S.grid.on ? ' (' + mpos(m.time) + ')' : '') + '  ' + MK_KINDS[m.kind][1] + (m.label ? ': ' + m.label : '')); if (m.comment) L.push(...m.comment.split('\n').map(x => '      ' + x)); } }
+  if (S.instruments.length){ L.push('', 'INSTRUMENTATION'); for (const i of S.instruments){ L.push('  ' + i.name); for (const s of i.spans){ L.push('    ' + range(s.start, s.end)); if (s.comment) L.push('      ' + s.comment); } } }
+  return L.join('\n') + '\n';
+}
+
+/* ---------- banner, toast ---------- */
+function showBanner(html){ const b = $('#banner'); b.innerHTML = html; b.hidden = false; }
+function hideBanner(){ $('#banner').hidden = true; }
+let toastT; function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- demo track (synthesized in the browser) ---------- */
+async function makeDemo(){
+  const sr = 22050, D = 80, ctx = new OfflineAudioContext(1, sr * D, sr);
+  const comp = ctx.createDynamicsCompressor(); comp.connect(ctx.destination);
+  const out = ctx.createGain(); out.gain.value = 0.8; out.connect(comp);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1600; lp.connect(out);
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const nb = ctx.createBuffer(1, sr, sr), nd = nb.getChannelData(0); for (let i = 0; i < sr; i++) nd[i] = Math.random() * 2 - 1;
+  const tone = (type, m, t, len, vol, a = .01, r = .08, dest = lp) => {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = hz(m);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.setValueAtTime(vol, t + Math.max(a, len - r)); g.gain.linearRampToValueAtTime(0, t + len);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + len + .02);
+  };
+  const noise = (t, vol, freq, len) => {
+    const s = ctx.createBufferSource(); s.buffer = nb; const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = freq;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + len);
+    s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * .5); s.stop(t + len + .02);
+  };
+  const kick = t => { const o = ctx.createOscillator(); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + .14); const g = ctx.createGain(); g.gain.setValueAtTime(.9, t); g.gain.exponentialRampToValueAtTime(.001, t + .3); o.connect(g); g.connect(out); o.start(t); o.stop(t + .32); };
+  const CH = {C: [60, 64, 67], Am: [57, 60, 64], F: [53, 57, 60], G: [55, 59, 62], Dm: [50, 53, 57]};
+  const V = ['C', 'Am', 'F', 'G', 'C', 'Am', 'Dm', 'G'], K = ['F', 'G', 'C', 'Am', 'F', 'G', 'C', 'C'];
+  const plan = [['intro', ['C', 'Am', 'F', 'G']], ['verse', V], ['chorus', K], ['verse2', V], ['chorus', K], ['outro', ['F', 'G', 'C', 'C']]];
+  let bar = 0;
+  for (const [sec, prog] of plan){
+    prog.forEach((c, bi) => {
+      const t = bar * 2, ch = CH[c];
+      const fade = sec === 'outro' ? 1 - bi / 5 : 1;
+      ch.forEach(n => tone('triangle', n, t, 2.05, .07 * fade, .25, .4));
+      if (sec !== 'intro'){
+        if (sec === 'outro') { tone('triangle', ch[0] - 24, t, 1.9, .28 * fade, .01, .3); }
+        else for (let e = 0; e < 8; e++) tone('triangle', ch[0] - 24, t + e * .25, .22, .28, .005, .05);
+      }
+      if (sec === 'verse' || sec === 'verse2' || sec === 'chorus'){
+        const beats = sec === 'chorus' ? [0, 1, 2, 3] : [0, 2];
+        beats.forEach(b => kick(t + b * .5));
+        if (sec !== 'verse') [1, 3].forEach(b => noise(t + b * .5, .35, 1200, .16));
+        for (let e = 0; e < 8; e++) noise(t + e * .25, e % 2 ? .07 : .12, 7000, .05);
+      }
+      if (sec === 'chorus'){
+        const pat = [0, 1, 2, 1, 2, 0, 1, 2];
+        pat.forEach((p, e) => tone('square', ch[p] + 12, t + e * .25, .22, .05, .005, .06));
+      }
+      bar++;
+    });
+  }
+  const buf = await ctx.startRendering();
+  const d = buf.getChannelData(0), n = d.length, ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0, o = 44; i < n; i++, o += 2){ const s = clamp(d[i], -1, 1); v.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
+  return {blob: new Blob([ab], {type: 'audio/wav'}), buffer: buf};
+}
+let demoCache = null;
+async function loadDemoAudio(){
+  waveMsg = 'Generating the demo track…'; renderTimeline();
+  try {
+    demoCache = demoCache || await makeDemo();
+    if (S.source.type !== 'demo') return;
+    P.useAudio(URL.createObjectURL(demoCache.blob)); peaks = computePeaks(demoCache.buffer); waveMsg = ''; renderTimeline();
+  } catch(e){ waveMsg = 'The demo track could not be generated in this browser'; renderTimeline(); }
+}
+function demoState(){
+  const s = (a, b, label, color, o) => mk(a, b, label, color, o);
+  return {app: 'listening-map', version: 1,
+    meta: {title: 'Demo Track in C', composer: 'Generated in the browser', student: 'Example analysis', notes: 'Verse and chorus form in two rotations, framed by an auxiliary intro and outro. Choruses add drums on every beat, a backbeat, and an arpeggiated lead.'},
+    source: {type: 'demo', name: 'Demo track (generated)', duration: 80},
+    grid: {on: true, bpm: 120, bpb: 4, offset: 0, snap: true},
+    tierNames: ['Phrases', 'Sections'],
+    tiers: [
+      [s(0, 8, 'Intro', 'sky', {aux: true}), s(8, 16, 'a', 'teal'), s(16, 24, 'a′', 'teal', {comment: 'Same opening as a, but IV is replaced by ii so the phrase leans harder into V.'}), s(24, 32, 'c', 'amber'), s(32, 40, 'c′', 'amber', {comment: 'Ends on the tonic: the first real arrival of the song.'}),
+       s(40, 48, 'a', 'teal'), s(48, 56, 'a′', 'teal'), s(56, 64, 'c', 'amber'), s(64, 72, 'c′', 'amber'), s(72, 80, 'Outro', 'sky', {aux: true})],
+      [s(0, 8, 'Intro', 'sky', {aux: true, comment: 'Pad alone states the verse progression I vi IV V.'}), s(8, 24, 'Verse 1', 'teal', {comment: 'Bass and kick enter together. Eighth-note bass keeps the energy moderate.'}), s(24, 40, 'Chorus', 'amber', {comment: 'Progression rotates to start on IV. Drum density doubles and the lead enters.'}),
+       s(40, 56, 'Verse 2', 'teal', {comment: 'A backbeat is added that was missing from verse 1, so the second rotation is not an exact repeat.'}), s(56, 72, 'Chorus', 'amber'), s(72, 80, 'Outro', 'sky', {aux: true, comment: 'Drums and lead drop out; the texture fades over IV V I.'})]
+    ],
+    markers: [
+      {id: uid(), time: 8, label: 'Groove enters', kind: 'texture', comment: ''},
+      {id: uid(), time: 38, label: 'PAC', kind: 'cadence', comment: 'V to I in the last two bars of the chorus.'},
+      {id: uid(), time: 56, label: 'Climax', kind: 'climax', comment: 'Fullest texture of the piece begins here.'},
+      {id: uid(), time: 70, label: 'PAC', kind: 'cadence', comment: ''}
+    ],
+    instruments: [
+      {id: uid(), name: 'Pad', color: 'slate', spans: [{id: uid(), start: 0, end: 80, comment: 'Sustained triads throughout.'}]},
+      {id: uid(), name: 'Bass', color: 'blue', spans: [{id: uid(), start: 8, end: 80, comment: ''}]},
+      {id: uid(), name: 'Drums', color: 'rose', spans: [{id: uid(), start: 8, end: 72, comment: ''}]},
+      {id: uid(), name: 'Lead', color: 'amber', spans: [{id: uid(), start: 24, end: 40, comment: 'Arpeggiates the chord tones in eighth notes.'}, {id: uid(), start: 56, end: 72, comment: ''}]}
+    ]};
+}
+
+/* ---------- boot ---------- */
+S = demoState();
+activeTier = 0;
+fit(); renderAll(); renderInfo();
+loadDemoAudio();
+showBanner('You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.');
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTimeline, 120); });
+</script>
+
+</body>
+</html>
