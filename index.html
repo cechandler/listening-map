@@ -809,7 +809,8 @@ $('#snap').onchange = e => edit(() => { S.grid.snap = e.target.checked; if (e.ta
 $('#present').onchange = e => { presenting = e.target.checked; document.body.classList.toggle('present', presenting); renderAll(); renderInfo(); };
 
 let wasPlaying = null;
-(function loop(){
+function loop(){
+  if (!S){ requestAnimationFrame(loop); return; }
   const t = P.t(), playing = P.playing();
   placePH();
   const r = $('#readout'); const pos = mpos(t);
@@ -817,7 +818,7 @@ let wasPlaying = null;
   if (playing !== wasPlaying){ $('#playIcon').innerHTML = playing ? '<path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/>' : '<path d="M7 4.5v15l13-7.5z"/>'; $('#bPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play'); wasPlaying = playing; }
   if (playing){ const x = t * pps; if (x > tl.scrollLeft + visW() - 40 || x < tl.scrollLeft) tl.scrollLeft = x - 40; }
   requestAnimationFrame(loop);
-})();
+}
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown', e => {
@@ -1027,6 +1028,7 @@ function demoState(){
 S = demoState();
 activeTier = 0;
 fit(); renderAll(); renderInfo();
+requestAnimationFrame(loop);
 loadDemoAudio();
 showBanner('You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.');
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTimeline, 120); });
