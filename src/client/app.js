@@ -1,274 +1,24 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Listening Map</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>
-*,*::before,*::after{box-sizing:border-box}
-body{margin:0}
-[hidden]{display:none!important}
-/* Layout: a tape-deck style transport over a horizontally scrolling multi-lane timeline; inspector and tabs below. */
-:root{
-  --bg:#eef0f3; --surface:#ffffff; --surface-2:#f5f6f8; --line:#d7dbe2; --fg:#181c24; --muted:#5b6474;
-  --accent:#c2550f; --focus:#2f5fd0; --wave:#8a94a6; --grid:rgba(24,28,36,.07); --mk:#9b3d9e;
-  --c-rose:#d6335b; --c-amber:#d38a0c; --c-olive:#6f9a1a; --c-green:#1f9d57; --c-teal:#12948a;
-  --c-sky:#1b8cc4; --c-blue:#4a55d6; --c-violet:#7c4ddb; --c-plum:#b93aa9; --c-slate:#6a7587;
-  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
-  --ui:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --gut:120px;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#12151b; --surface:#1a1e26; --surface-2:#20252f; --line:#2f3642; --fg:#e7eaf0; --muted:#98a1b2;
-  --accent:#f08a3c; --focus:#7aa2ff; --wave:#6d7890; --grid:rgba(231,234,240,.06); --mk:#d77ad9;
-  --c-rose:#f06a8a; --c-amber:#f0b040; --c-olive:#a3c94a; --c-green:#4fcf86; --c-teal:#3cc7bb;
-  --c-sky:#52b8ec; --c-blue:#8290f5; --c-violet:#a888f2; --c-plum:#e07ad2; --c-slate:#9aa5b8;
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#12151b; --surface:#1a1e26; --surface-2:#20252f; --line:#2f3642; --fg:#e7eaf0; --muted:#98a1b2;
-  --accent:#f08a3c; --focus:#7aa2ff; --wave:#6d7890; --grid:rgba(231,234,240,.06); --mk:#d77ad9;
-  --c-rose:#f06a8a; --c-amber:#f0b040; --c-olive:#a3c94a; --c-green:#4fcf86; --c-teal:#3cc7bb;
-  --c-sky:#52b8ec; --c-blue:#8290f5; --c-violet:#a888f2; --c-plum:#e07ad2; --c-slate:#9aa5b8;
-  color-scheme:dark}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui);padding-inline:16px;padding-block:14px 32px}
-.app{max-width:1440px;margin:0 auto;display:grid;gap:12px}
-button,input,select,textarea{font:inherit;color:inherit}
-.c-rose{--cc:var(--c-rose)}.c-amber{--cc:var(--c-amber)}.c-olive{--cc:var(--c-olive)}.c-green{--cc:var(--c-green)}.c-teal{--cc:var(--c-teal)}
-.c-sky{--cc:var(--c-sky)}.c-blue{--cc:var(--c-blue)}.c-violet{--cc:var(--c-violet)}.c-plum{--cc:var(--c-plum)}.c-slate{--cc:var(--c-slate)}
-
-/* header */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
-.brand{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1 1 260px}
-.brand h1{font:700 22px/1 var(--display);letter-spacing:-.01em;margin:0;white-space:nowrap}
-.brand .doc{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.btn{font:500 13px/1 var(--ui);padding:8px 11px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn:hover{border-color:var(--muted)}
-.btn:focus-visible,.chip:focus-visible,.sw:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-.btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.btn.sm{padding:5px 8px;font-size:12px}
-.btn[disabled]{opacity:.45;cursor:default}
-.sep{width:1px;height:22px;background:var(--line)}
-.toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
-.toggle input{accent-color:var(--accent)}
-.pop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-.pop input[type=text]{flex:1 1 280px;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
-.note{color:var(--muted);font-size:12.5px}
-.banner{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
-
-/* transport */
-.transport{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.play{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:#fff;cursor:pointer;display:grid;place-items:center;flex:none}
-.play svg{width:18px;height:18px;fill:currentColor}
-.readout{font:500 20px/1 var(--mono);font-variant-numeric:tabular-nums;min-width:96px}
-.readout small{display:block;font:500 11px/1.4 var(--mono);color:var(--muted);letter-spacing:.02em;margin-top:3px}
-.grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.grp .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px}
-kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--surface-2);color:var(--muted)}
-.media{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
-#ytBox{width:320px;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden}
-#ytBox iframe{width:100%;height:100%;display:block}
-
-/* timeline */
-.tl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;position:relative;touch-action:pan-x pan-y}
-.tl-inner{position:relative;min-width:100%;--barpx:0px;--bar0:0px}
-.row{display:flex;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.lab{position:sticky;left:0;z-index:4;flex:none;width:var(--gut);box-sizing:border-box;background:var(--surface-2);border-right:1px solid var(--line);padding:0 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
-.lab small{font:500 10px var(--mono);opacity:.75;margin-left:auto}
-.lab.click{cursor:pointer}
-.lab.click:hover{color:var(--fg)}
-.lab.sel{color:var(--fg);box-shadow:inset 0 0 0 2px var(--focus)}
-.trk{position:relative;flex:none;height:100%}
-.gridbg .trk{background-image:repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px var(--barpx));background-position-x:var(--bar0)}
-.r-ruler{height:28px}.r-mk{height:30px}.r-tier{height:46px}.r-wave{height:66px}.r-inst{height:30px}.r-add{min-height:38px}
-.r-tier.act .lab{color:var(--fg);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
-.r-tier.act .lab.sel{box-shadow:inset 3px 0 0 var(--accent),inset 0 0 0 2px var(--focus)}
-.r-ruler .trk,.r-wave .trk{cursor:text}
-.tk{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
-.tk.min{top:65%}
-.tk b{position:absolute;left:4px;top:5px;font:500 11px var(--mono);color:var(--muted);white-space:nowrap}
-.sp{position:absolute;top:6px;bottom:6px;box-sizing:border-box;border:1.5px solid var(--cc);border-radius:5px;background:color-mix(in srgb,var(--cc) 20%,var(--surface));overflow:hidden;padding:0 7px;display:flex;align-items:center;font-size:12.5px;font-weight:500;white-space:nowrap;cursor:pointer}
-.sp.aux{border-style:dashed;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cc) 16%,var(--surface)) 0 5px,var(--surface) 5px 10px)}
-.sp.elide{clip-path:polygon(9px 0,100% 0,100% 100%,0 100%);padding-left:14px}
-.sp.sel{box-shadow:inset 0 0 0 2px var(--focus);z-index:1}
-.sp.hc::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:var(--cc)}
-.sp-l{overflow:hidden;text-overflow:ellipsis}
-.bnd{position:absolute;top:0;bottom:0;width:12px;margin-left:-6px;cursor:ew-resize;z-index:2}
-.bnd:hover::after{content:"";position:absolute;left:5px;top:3px;bottom:3px;width:2px;border-radius:1px;background:var(--focus)}
-.mk{position:absolute;top:7px;display:flex;align-items:center;gap:4px;cursor:grab;white-space:nowrap;z-index:2;margin-left:-8px}
-.mk-g{width:16px;height:16px;border-radius:4px;background:var(--mk);color:var(--surface);font:600 10px/16px var(--mono);text-align:center}
-.mk-l{font-size:12px;font-weight:500}
-.mk.sel .mk-g{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--focus)}
-.stem{position:absolute;top:58px;bottom:0;border-left:1px dashed var(--mk);opacity:.5;pointer-events:none;z-index:1}
-.is{position:absolute;top:7px;bottom:7px;border-radius:4px;background:var(--cc);opacity:.8;cursor:pointer}
-.is.sel{opacity:1;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--focus)}
-.is.hc{background-image:radial-gradient(circle at calc(100% - 7px) 50%,var(--surface) 0 2.5px,transparent 3px)}
-.ih{position:absolute;top:-4px;bottom:-4px;width:10px;cursor:ew-resize}
-.ih.l{left:-5px}.ih.r{right:-5px}
-.r-inst .trk{cursor:crosshair}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--cc);flex:none}
-.ph{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;z-index:3}
-.ph::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top:7px solid var(--accent)}
-.r-add .lab{flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding-block:6px}
-.r-add .btn{justify-content:center}
-.wavemsg{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);position:sticky}
-canvas#wv{display:block;height:66px}
-
-/* lower panels */
-.lower{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
-.card h2{font:600 15px/1.2 var(--display);margin:0 0 2px}
-.eyebrow{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500}
-.meta{font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
-.stack{display:grid;gap:12px}
-.field{display:grid;gap:4px}
-.field>span{font-size:12px;color:var(--muted);font-weight:500}
-.field input[type=text],.field input[type=number],.field textarea,.field select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);width:100%;box-sizing:border-box}
-.field textarea{min-height:84px;resize:vertical;line-height:1.45}
-.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 9px;font-size:12px;cursor:pointer}
-.chip:hover{border-color:var(--muted)}
-.chip.sym{font-family:var(--mono);min-width:28px}
-.chipgroup{display:grid;gap:5px}
-.swatches{display:flex;flex-wrap:wrap;gap:6px}
-.sw{width:22px;height:22px;border-radius:5px;border:0;background:var(--cc);cursor:pointer}
-.sw.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--fg)}
-.checks{display:flex;flex-wrap:wrap;gap:8px 18px}
-.actions{display:flex;flex-wrap:wrap;gap:6px}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-4px -4px 12px;padding:0 4px}
-.tab{border:0;background:none;padding:8px 10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
-.cm{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 0 8px calc(var(--d,0) * 16px);border-bottom:1px solid var(--line);cursor:pointer}
-.cm:last-child{border-bottom:0}
-.cm:hover .cm-h{color:var(--focus)}
-.cm-h{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px}
-.cm-b{font-size:13px;color:var(--fg);margin-top:3px;max-width:65ch;overflow-wrap:anywhere}
-.cm .meta{font-weight:400}
-.keys{width:100%;border-collapse:collapse;font-size:13px}
-.keys td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
-.keys td:first-child{white-space:nowrap;padding-right:14px}
-.ro-label{font:600 18px/1.25 var(--display)}
-.ro-body{white-space:pre-wrap;max-width:65ch}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
-body.present .edit-only{display:none!important}
-body.present .transport{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
-body.present .bnd,body.present .ih{display:none}
-.presentpill{display:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:600}
-body.present .presentpill{display:inline}
-@media (max-width:860px){.lower{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:640px){:root{--gut:86px}.readout{font-size:17px;min-width:80px}.brand h1{font-size:19px}}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
-</style>
-</head>
-<body>
-
-
-<div class="app">
-  <header class="top">
-    <div class="brand"><h1>Listening Map</h1><span class="doc" id="docTitle"></span><span class="presentpill">Presentation</span></div>
-    <div class="tools">
-      <label class="btn edit-only" for="fAudio">Open audio</label>
-      <input type="file" id="fAudio" accept="audio/*,video/mp4" hidden>
-      <button class="btn edit-only" id="bYT" type="button">YouTube link</button>
-      <label class="btn" for="fOpen">Open analysis</label>
-      <input type="file" id="fOpen" accept=".json,application/json" hidden>
-      <span class="sep"></span>
-      <button class="btn pri" id="bExport" type="button">Export analysis</button>
-      <button class="btn" id="bReport" type="button">Text report</button>
-      <span class="sep"></span>
-      <label class="toggle"><input type="checkbox" id="present"> Present</label>
-    </div>
-  </header>
-
-  <form class="pop" id="ytPop" hidden>
-    <input type="text" id="ytUrl" placeholder="Paste a YouTube link, e.g. https://youtu.be/…" autocomplete="off">
-    <button class="btn pri" type="submit">Load video</button>
-    <button class="btn" type="button" id="ytCancel">Cancel</button>
-    <span class="note" style="flex-basis:100%">Starts a new analysis timed to the video. Save your current work first.</span>
-  </form>
-
-  <div class="banner" id="banner" hidden></div>
-
-  <div class="media"><div id="ytBox" hidden><div id="yt"></div></div></div>
-
-  <section class="transport" aria-label="Transport">
-    <button class="play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
-    <div class="readout" id="readout">0:00.0<small>&nbsp;</small></div>
-    <div class="grp">
-      <button class="btn sm" data-skip="-10" type="button">−10s</button>
-      <button class="btn sm" data-skip="-1" type="button">−1s</button>
-      <button class="btn sm" data-skip="1" type="button">+1s</button>
-      <button class="btn sm" data-skip="10" type="button">+10s</button>
-    </div>
-    <span class="sep"></span>
-    <div class="grp"><span class="lbl">Zoom</span>
-      <button class="btn sm" id="zOut" type="button" aria-label="Zoom out">−</button>
-      <button class="btn sm" id="zFit" type="button">Fit</button>
-      <button class="btn sm" id="zIn" type="button" aria-label="Zoom in">+</button>
-    </div>
-    <span class="sep edit-only"></span>
-    <div class="grp edit-only"><span class="lbl">Edit</span>
-      <button class="btn sm" id="bSplit" type="button">Split <kbd>S</kbd></button>
-      <button class="btn sm" id="bGroup" type="button">Group <kbd>G</kbd></button>
-      <button class="btn sm" id="bMark" type="button">Marker <kbd>M</kbd></button>
-      <button class="btn sm" id="bUndo" type="button" aria-label="Undo">Undo</button>
-      <button class="btn sm" id="bRedo" type="button" aria-label="Redo">Redo</button>
-    </div>
-    <label class="toggle edit-only" title="Snap edits to the nearest beat when the measure grid is on"><input type="checkbox" id="snap"> Snap to beat</label>
-  </section>
-
-  <div class="tl" id="tl"><div class="tl-inner" id="inner"></div></div>
-
-  <div class="lower">
-    <section class="card" id="insp" aria-label="Inspector"></section>
-    <section class="card" aria-label="Analysis details">
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="comments" aria-selected="true" type="button">Comments</button>
-        <button class="tab" role="tab" data-tab="info" aria-selected="false" type="button">Piece and grid</button>
-        <button class="tab" role="tab" data-tab="keys" aria-selected="false" type="button">Shortcuts</button>
-      </div>
-      <div id="tab-comments"></div>
-      <div id="tab-info" hidden></div>
-      <div id="tab-keys" hidden>
-        <table class="keys">
-          <tr><td><kbd>Space</kbd></td><td>Play or pause</td></tr>
-          <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block</td></tr>
-          <tr><td><kbd>S</kbd></td><td>Split the active level at the playhead</td></tr>
-          <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
-          <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
-          <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
-          <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
-          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
-          <tr><td><kbd>Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
-          <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></td><td>Zoom in, zoom out, fit</td></tr>
-          <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo and redo (<kbd>⌘</kbd> on Mac)</td></tr>
-          <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
-          <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd>Alt</kbd> to ignore snapping.</td></tr>
-        </table>
-      </div>
-    </section>
-  </div>
-</div>
-<div class="toast" id="toast" hidden></div>
-
-<script>
 const $ = s => document.querySelector(s);
 const COLORS = ['rose','amber','olive','green','teal','sky','blue','violet','plum','slate'];
-const TIER_NAMES = ['Phrases','Sections','Large form'];
+const CFG = typeof CONFIG === 'object' && CONFIG ? CONFIG : {};
+const TIER_NAMES = Array.isArray(CFG.LEVEL_NAMES) && CFG.LEVEL_NAMES.length ? CFG.LEVEL_NAMES : ['Phrases','Sections','Large form'];
 const MK_KINDS = {cadence:['C','Cadence'],modulation:['M','Modulation'],climax:['!','Climax'],texture:['T','Texture change'],elision:['E','Elision'],other:['•','Other']};
-const VOCAB = [
+// Label suggestions. A course file picks groups by name ("VOCAB": ["Song form", "Production"]) or adds its own
+// ({"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}).
+const VOCAB_LIBRARY = [
   ['Song form',['Intro','Verse','Pre-chorus','Chorus','Post-chorus','Bridge','Break','Solo','Outro','Refrain']],
   ['Classical form',['A','B','C','A′','Exposition','Transition','Development','Retransition','Recapitulation','Coda','Theme','Variation']],
-  ['Phrase and theme',['Presentation','Continuation','Antecedent','Consequent','Basic idea','Cadential','Sentence','Period']]
+  ['Phrase and theme',['Presentation','Continuation','Antecedent','Consequent','Basic idea','Cadential','Sentence','Period']],
+  ['Production',['Intro','Build','Drop','Breakdown','Hook','Riser','Fill','Turnaround','Interlude','Outro']]
 ];
+const VOCAB = Array.isArray(CFG.VOCAB) && CFG.VOCAB.length
+  ? CFG.VOCAB.map(v => typeof v === 'string' ? VOCAB_LIBRARY.find(g => g[0] === v) : v && Array.isArray(v.words) ? [String(v.name || ''), v.words.map(String)] : null).filter(Boolean)
+  : VOCAB_LIBRARY.slice(0, 3);
+const MARKER_CHIPS = Array.isArray(CFG.MARKER_CHIPS) && CFG.MARKER_CHIPS.length ? CFG.MARKER_CHIPS.map(String) : ['PAC','IAC','HC','DC','PC','V:HC','to V','to vi','Climax','Retransition'];
 const SYMBOLS = ['⁒','➚','➙','➘','′','″'];
 const EPS = 1e-6;
+// True when the page is served by a course's Apps Script web app (google.script.run is there).
+const IN_COURSE_FRAME = !!(window.google && google.script && google.script.run);
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -331,7 +81,7 @@ function loadYTApi(){
     const timer = setTimeout(() => rej(new Error('timeout')), 9000);
     window.onYouTubeIframeAPIReady = () => { clearTimeout(timer); res(); };
     const s = document.createElement('script');
-    s.src = 'https://www.youtube.com/iframe_api';
+    s.src = 'https:\/\/www.youtube.com/iframe_api';
     s.onerror = () => { clearTimeout(timer); rej(new Error('blocked')); };
     document.head.appendChild(s);
   });
@@ -340,7 +90,7 @@ async function useYouTube(id, onReady){
   P.none(); peaks = null; waveMsg = 'No waveform for YouTube sources';
   try { await loadYTApi(); }
   catch(e){
-    showBanner('YouTube playback is blocked in this preview window. It will work once the page is hosted on your own site. For now, use <b>Open audio</b> with a file.');
+    showBanner('YouTube playback could not load here. Check your connection, or use <b>Open audio</b> with a file.');
     return;
   }
   $('#ytBox').hidden = false;
@@ -527,10 +277,25 @@ function renderTimeline(){
   h += `<div class="row r-add edit-only"><div class="lab"><button class="btn sm" data-k="addinst" type="button">+ Instrument</button><button class="btn sm" data-k="addlevel" type="button">+ Level</button></div><div class="trk" style="width:${W}px"></div></div>`;
   for (const m of S.markers) h += `<div class="stem" style="left:${g + m.time * pps}px"></div>`;
   h += `<div class="ph" id="ph"></div>`;
+  keepTouched();
   inner.innerHTML = h;
   inner.style.width = (g + W) + 'px';
   drawWave(); placePH();
 }
+// While fingers are on the screen, the browser sends each finger's touch events to the element it first landed on. A redraw
+// (a tap that selects, or each step of a pinch) replaces those elements, and events sent to an element that has left the
+// page never reach the document, so a pinch would stop after one step. Until the fingers lift, the replaced elements wait
+// in a hidden holder that stays in the page.
+let touchesDown = 0;
+function keepTouched(){
+  if (!touchesDown || !inner.firstChild) return;
+  let keep = document.getElementById('touchKeep');
+  if (!keep){ keep = document.createElement('div'); keep.id = 'touchKeep'; keep.hidden = true; document.body.appendChild(keep); }
+  inner.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+  while (inner.firstChild) keep.appendChild(inner.firstChild);
+}
+const countTouches = e => { touchesDown = e.touches.length; if (!touchesDown){ const k = document.getElementById('touchKeep'); if (k) k.remove(); } };
+['touchstart', 'touchend', 'touchcancel'].forEach(t => document.addEventListener(t, countTouches, {passive: true, capture: true}));
 function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
 
 /* ---------- rendering: inspector ---------- */
@@ -584,7 +349,7 @@ function renderInspector(){
         <label class="field"><span>Label</span><input type="text" id="iLabel" value="${esc(m.label)}" placeholder="e.g. PAC, to V, climax" autocomplete="off"></label>
         <label class="field"><span>Type</span><select id="iKind">${Object.entries(MK_KINDS).map(([k, v]) => `<option value="${k}"${k === m.kind ? ' selected' : ''}>${v[1]}</option>`).join('')}</select></label>
       </div>
-      <div class="chips">${['PAC','IAC','HC','DC','PC','V:HC','to V','to vi','Climax','Retransition'].map(w => `<button class="chip" data-act="vocab" data-w="${w}" type="button">${w}</button>`).join('')}</div>
+      <div class="chips">${MARKER_CHIPS.map(w => `<button class="chip" data-act="vocab" data-w="${esc(w)}" type="button">${esc(w)}</button>`).join('')}</div>
       <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="Describe the moment.">${esc(m.comment)}</textarea></label>
       <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="mkhere" type="button">Move to playhead</button><button class="btn" data-act="del" type="button">Delete marker</button></div></div>`;
     bindField($('#iLabel'), v => { m.label = v; });
@@ -724,15 +489,21 @@ function renderAll(){ validateSel(); renderTimeline(); renderInspector(); render
 
 /* ---------- pointer interaction ---------- */
 function tAt(ev){ return clamp((ev.clientX - inner.getBoundingClientRect().left - gut()) / pps, 0, dur()); }
+// One drag at a time, following only the pointer that started it. A pinch (a second finger) aborts the drag and undoes it.
+let abortDrag = null;
 function drag(ev, move, opts = {}){
   ev.preventDefault();
-  const prev = snapshot(); let moved = false; const x0 = ev.clientX;
-  const mv = e => { if (!moved && Math.abs(e.clientX - x0) < 3) return; moved = true; move(e); if (!opts.scrub) renderTimeline(); };
+  if (abortDrag) abortDrag();
+  const prev = snapshot(), id = ev.pointerId; let moved = false; const x0 = ev.clientX;
+  const off = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); abortDrag = null; };
+  const mv = e => { if (e.pointerId !== id) return; if (!moved && Math.abs(e.clientX - x0) < 3) return; moved = true; move(e); if (!opts.scrub) renderTimeline(); };
   const up = e => {
-    removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+    if (e.pointerId !== id) return;
+    off();
     opts.end && opts.end(moved, e);
     if (!opts.scrub){ if (moved && snapshot() !== prev) commit(prev); renderAll(); }
   };
+  abortDrag = () => { off(); if (!opts.scrub && snapshot() !== prev){ S = JSON.parse(prev); validateSel(); renderAll(); } };
   addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 inner.addEventListener('pointerdown', ev => {
@@ -797,8 +568,65 @@ inner.addEventListener('click', e => {
 
 /* ---------- zoom, scroll, transport ---------- */
 function visW(){ return tl.clientWidth - gut(); }
-function fit(){ pps = Math.max(0.5, (visW() - 8) / dur()); }
-function zoom(f){ const t = P.t(); pps = clamp(pps * f, 0.5, 600); renderTimeline(); tl.scrollLeft = t * pps - visW() / 2; }
+const MAX_PPS = 600;
+function fitPps(){ return Math.max(0.5, (visW() - 8) / dur()); }
+function fit(){ pps = fitPps(); }
+// Zooming out stops at the whole piece in view; there is nothing to see past that.
+function zoom(f){ const t = P.t(); pps = clamp(pps * f, Math.min(fitPps(), MAX_PPS), MAX_PPS); renderTimeline(); tl.scrollLeft = t * pps - visW() / 2; }
+// Zoom keeping the moment under the pointer (clientX) in place.
+function zoomAt(f, clientX){
+  const x = clamp(clientX - tl.getBoundingClientRect().left - gut(), 0, visW());
+  const t = (tl.scrollLeft + x) / pps, next = clamp(pps * f, Math.min(fitPps(), MAX_PPS), MAX_PPS);
+  if (Math.abs(next - pps) < 1e-9) return;
+  pps = next; renderTimeline(); tl.scrollLeft = t * pps - x;
+}
+
+/* Pinch and wheel zoom on the timeline.
+   - Trackpad pinch in Chrome, Edge, and Firefox, and Ctrl (or ⌘) + mouse wheel everywhere, arrive as wheel events with ctrlKey.
+   - Trackpad pinch in Safari arrives as gesturestart/gesturechange with a running scale.
+   - Touchscreens pinch with two fingers (touch events); the timeline's touch-action keeps the browser from zooming the page.
+   Gestures fire many events a frame, so the zoom is gathered and applied once per animation frame. */
+const Z = {f: 1, x: 0, raf: 0, safari: false, touch: null};
+function queueZoom(f, clientX){
+  if (!isFinite(f) || f <= 0) return;
+  Z.f *= f; Z.x = clientX;
+  if (!Z.raf) Z.raf = requestAnimationFrame(() => { Z.raf = 0; const f = Z.f; Z.f = 1; zoomAt(f, Z.x); });
+}
+tl.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey){
+    e.preventDefault();
+    if (Z.safari) return;
+    const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * visW() : e.deltaY;
+    // A wheel notch (about 100px) zooms by about 1.5, like the + and - keys; a trackpad pinch sends many small deltas.
+    queueZoom(Math.exp(-clamp(px, -50, 50) * 0.008), e.clientX);
+  } else if (e.shiftKey && !e.deltaX && e.deltaY){
+    e.preventDefault(); tl.scrollLeft += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+  }
+}, {passive: false});
+let gScale = 1;
+tl.addEventListener('gesturestart', e => { if (Z.touch) return; e.preventDefault(); Z.safari = true; gScale = 1; });
+tl.addEventListener('gesturechange', e => { if (Z.touch || !Z.safari) return; e.preventDefault(); queueZoom(e.scale / gScale, e.clientX); gScale = e.scale; });
+tl.addEventListener('gestureend', e => { e.preventDefault(); Z.safari = false; });
+const tdist = e => Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+const tmid = e => (e.touches[0].clientX + e.touches[1].clientX) / 2;
+// Touch listeners sit on the document and test where the fingers are: the first finger's tap re-renders the timeline,
+// so later touch events can target a removed element that no longer bubbles up to it.
+const inTl = t => { const r = tl.getBoundingClientRect(); return t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom; };
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 2 || !inTl(e.touches[0]) || !inTl(e.touches[1])) return;
+  if (abortDrag) abortDrag();
+  Z.touch = {d: tdist(e) || 1, x: tmid(e)};
+}, {passive: true});
+document.addEventListener('touchmove', e => {
+  if (!Z.touch || e.touches.length !== 2) return;
+  if (e.cancelable) e.preventDefault();
+  const d = tdist(e) || 1, x = tmid(e);
+  tl.scrollLeft -= x - Z.touch.x;
+  queueZoom(d / Z.touch.d, x);
+  Z.touch.d = d; Z.touch.x = x;
+}, {passive: false});
+const endTouch = e => { if (e.touches.length < 2) Z.touch = null; };
+document.addEventListener('touchend', endTouch); document.addEventListener('touchcancel', endTouch);
 function scrollTo(t){ const x = t * pps; if (x < tl.scrollLeft || x > tl.scrollLeft + visW() - 30) tl.scrollLeft = x - visW() * 0.25; }
 $('#zIn').onclick = () => zoom(1.5); $('#zOut').onclick = () => zoom(1 / 1.5); $('#zFit').onclick = () => { fit(); renderTimeline(); };
 document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { P.seek(P.t() + +b.dataset.skip); scrollTo(P.t()); });
@@ -885,36 +713,52 @@ $('#ytPop').onsubmit = e => {
 $('#fOpen').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   let data; try { data = JSON.parse(await f.text()); } catch(err){ toast('That file is not a Listening Map analysis.'); return; }
-  if (!data || data.app !== 'listening-map' || !Array.isArray(data.tiers)){ toast('That file is not a Listening Map analysis.'); return; }
+  openAnalysis(data, f.name);
+};
+// Opens an analysis object (from a file or a course submission). Returns false if it isn't one.
+function openAnalysis(data, label){
+  if (!data || data.app !== 'listening-map' || !Array.isArray(data.tiers) || !data.source){ toast('That file is not a Listening Map analysis.'); return false; }
   S = data; S.markers ||= []; S.instruments ||= []; S.tierNames ||= []; S.grid ||= {on: false, bpm: 120, bpb: 4, offset: 0, snap: false}; S.meta ||= {title: '', composer: '', student: '', notes: ''};
   undoStack = []; redoStack = []; sel = null; activeTier = 0; peaks = null; P.none(); P._t = 0;
   if (S.source.type === 'youtube'){ waveMsg = 'No waveform for YouTube sources'; hideBanner(); useYouTube(S.source.youtubeId); }
   else if (S.source.type === 'demo'){ hideBanner(); loadDemoAudio(); }
   else { pendingAudio = S.source.name; waveMsg = 'Audio not loaded'; showBanner(`This analysis was made with <b>${esc(S.source.name)}</b>. Load that file to hear it. <label class="btn sm" for="fAudio">Choose audio file</label>`); }
   fit(); renderAll(); renderInfo(); tl.scrollLeft = 0;
-  toast('Opened ' + (S.meta.student ? S.meta.student + '’s analysis' : f.name));
-};
+  toast('Opened ' + (S.meta.student ? S.meta.student + '’s analysis' : label));
+  return true;
+}
 
 function slug(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40); }
 function baseName(){ return [slug(S.meta.title) || 'analysis', slug(S.meta.student)].filter(Boolean).join('_'); }
-async function offerFile(name, text){
-  let dl = null;
-  try { if (window.claude && window.claude.use) dl = await window.claude.use('downloads'); } catch(e){}
-  if (dl){
-    try { await dl.save({filename: name, data: text}); toast('Saved ' + name); }
-    catch(e){ if (e && e.code !== 'declined') toast('The file could not be saved here (' + (e.code || 'error') + ').'); }
-    return;
-  }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type: 'text/plain'})); a.download = name;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+// Downloads a file. Inside a course site (the Apps Script frame) some browsers block downloads without saying so,
+// so the banner also offers the text to copy.
+function offerFile(name, text){
+  try {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type: 'text/plain'})); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch(e){}
+  if (!IN_COURSE_FRAME){ toast('Saved ' + name); return; }
+  showBanner(`Downloading <b>${esc(name)}</b>. Nothing arrived? <button class="btn sm" type="button" id="copyOpen">Show the text to copy</button> <button class="btn sm" type="button" id="copyHide">Dismiss</button>`);
+  $('#copyOpen').onclick = () => showCopy(name, text);
+  $('#copyHide').onclick = hideBanner;
 }
+function showCopy(name, text){
+  const d = $('#copyBox'); $('#copyTitle').textContent = name; $('#copyText').value = text;
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  $('#copyText').select();
+}
+$('#copyGo').onclick = async () => {
+  const t = $('#copyText'); t.select();
+  try { await navigator.clipboard.writeText(t.value); toast('Copied.'); } catch(e){ try { document.execCommand('copy'); toast('Copied.'); } catch(e2){ toast('Select the text and copy it.'); } }
+};
+$('#copyClose').onclick = () => { const d = $('#copyBox'); if (d.close) d.close(); else d.removeAttribute('open'); };
 $('#bExport').onclick = () => offerFile(baseName() + '.listening-map.json', JSON.stringify(S, null, 2));
 $('#bReport').onclick = () => offerFile(baseName() + '.txt', report());
 function report(){
   const L = [], range = (a, b) => fmt(a) + ' to ' + fmt(b) + (S.grid.on ? ` (${mbar(a)} to ${mbar(b)})` : '');
   L.push('LISTENING MAP ANALYSIS', '');
   L.push('Title: ' + (S.meta.title || ''), 'Composer/artist: ' + (S.meta.composer || ''), 'Analyst: ' + (S.meta.student || ''));
-  L.push('Source: ' + (S.source.type === 'youtube' ? 'https://youtu.be/' + S.source.youtubeId : S.source.name) + ' (' + fmt(dur()) + ')');
+  L.push('Source: ' + (S.source.type === 'youtube' ? 'https:\/\/youtu.be/' + S.source.youtubeId : S.source.name) + ' (' + fmt(dur()) + ')');
   if (S.grid.on) L.push(`Measure grid: ${S.grid.bpm} BPM, ${S.grid.bpb} beats per measure, m. 1 at ${S.grid.offset}s`);
   if (S.meta.notes) L.push('', 'OVERALL NOTES', S.meta.notes);
   for (let k = S.tiers.length - 1; k >= 0; k--){
@@ -1027,12 +871,13 @@ function demoState(){
 /* ---------- boot ---------- */
 S = demoState();
 activeTier = 0;
+$('#courseName').textContent = CFG.COURSE || '';
 fit(); renderAll(); renderInfo();
 requestAnimationFrame(loop);
 loadDemoAudio();
-showBanner('You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.');
+showBanner(esc(CFG.WELCOME || 'You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.'));
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTimeline, 120); });
-</script>
-
-</body>
-</html>
+// A new look changes the waveform color and may change the label gutter, so redraw the timeline.
+onLookChange = () => { if (S) renderTimeline(); };
+initLookPicker();
+initCourse();

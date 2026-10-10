@@ -1,0 +1,84 @@
+/* ===== Score =====
+   Engraved paper for the theory course: cream paper, hairline rules instead of boxes, Spectral serif headings,
+   small-caps labels, and form blocks drawn as brackets over the music (a colored rule along the top of each block
+   with its label beneath, as in an analysis written on a score). Public Sans for body, IBM Plex Mono for times.
+   Written as plain CSS; the build scopes it to :root[data-skin="score"]. */
+
+:root {
+  --bg: #F6F2E9; --surface: #FFFDF8; --surface-2: #F1ECE0; --line: #D9D1BF; --fg: #1B1A17; --muted: #5E5849;
+  --accent: #7E1A2A; --focus: #1E4FA8; --wave: #8A826F; --grid: rgba(27,26,23,.08); --mk: #7E1A2A;
+  --c-rose: #B8324F; --c-amber: #B5730B; --c-olive: #6A801C; --c-green: #1E6E47; --c-teal: #1B7A73;
+  --c-sky: #22729F; --c-blue: #3B48A8; --c-violet: #6340A6; --c-plum: #8E2F80; --c-slate: #5E6470;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151418; --surface: #1D1C21; --surface-2: #232228; --line: #36343C; --fg: #EAE6DD; --muted: #A39E92;
+  --accent: #E8899A; --focus: #8FB0FF; --wave: #8C877C; --grid: rgba(234,230,221,.06); --mk: #E8899A;
+  --c-rose: #EE7D95; --c-amber: #E7B252; --c-olive: #B2C866; --c-green: #7FD1A6; --c-teal: #6CCFC5;
+  --c-sky: #77BDE5; --c-blue: #98A2F2; --c-violet: #B59AF0; --c-plum: #DD8ACF; --c-slate: #A3A9B6;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #151418; --surface: #1D1C21; --surface-2: #232228; --line: #36343C; --fg: #EAE6DD; --muted: #A39E92;
+  --accent: #E8899A; --focus: #8FB0FF; --wave: #8C877C; --grid: rgba(234,230,221,.06); --mk: #E8899A;
+  --c-rose: #EE7D95; --c-amber: #E7B252; --c-olive: #B2C866; --c-green: #7FD1A6; --c-teal: #6CCFC5;
+  --c-sky: #77BDE5; --c-blue: #98A2F2; --c-violet: #B59AF0; --c-plum: #DD8ACF; --c-slate: #A3A9B6;
+  color-scheme: dark; }
+
+body { font-size: 14.5px; }
+/* Headings set like a title page. */
+.brand h1 { font: 700 26px/1 var(--display); letter-spacing: -0.01em; }
+.brand .doc { font-family: var(--display); font-style: italic; font-size: 15px; }
+.card h2, .lookhead h2, .pop h2 { font: 700 18px/1.2 var(--display); }
+.ro-label, .lookname { font-family: var(--display); font-weight: 700; }
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th {
+  font-family: var(--ui); font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.08em; font-size: 13px; font-weight: 600;
+}
+.cm-h { font-family: var(--display); font-size: 15px; }
+.cm-b, .ro-body { font-family: var(--display); font-size: 15px; line-height: 1.5; }
+
+/* Panels: paper with hairlines, no heavy boxes. */
+.card, .transport, .pop, .tl, .copybox { border: 1px solid var(--line); border-radius: 2px; box-shadow: 0 1px 0 var(--line); background: var(--surface); }
+header.top { border-bottom: 2px solid var(--fg); padding-bottom: 10px; }
+.btn { border-radius: 2px; border-color: color-mix(in srgb, var(--fg) 35%, var(--line)); font-weight: 600; }
+.btn:hover:not([disabled]) { border-color: var(--fg); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+.play { background: var(--fg); color: var(--bg); border-radius: 50%; }
+.readout { font-family: var(--mono); }
+.tabs { border-bottom: 1px solid var(--fg); }
+.tab { font-family: var(--display); font-size: 15px; font-weight: 600; }
+.tab[aria-selected=true] { border-bottom-color: var(--accent); color: var(--fg); }
+.chip { border-radius: 2px; font-family: var(--display); font-size: 13.5px; background: transparent; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.sw { border-radius: 50%; }
+.seg { border-radius: 2px; }
+.field input[type=text], .field input[type=number], .field textarea, .field select, .pop input[type=text] { border-radius: 2px; background: var(--surface); }
+.field textarea { font-family: var(--display); font-size: 15px; }
+
+/* The timeline: a staff-like board. Lane names in small caps; tick labels as measure numbers. */
+.lab { background: var(--surface); font-family: var(--ui); font-variant: small-caps; text-transform: lowercase; font-size: 13px; letter-spacing: 0.04em; }
+.r-tier.act .lab { box-shadow: inset 2px 0 0 var(--accent); }
+.tk b { font-family: var(--display); font-style: italic; font-size: 12px; }
+.row { border-bottom-color: color-mix(in srgb, var(--fg) 12%, transparent); }
+/* Blocks are brackets: a colored rule with end hooks, the label set in the serif below it. */
+.sp {
+  top: 10px; bottom: 6px; border: 0; border-radius: 0; background: color-mix(in srgb, var(--cc) 9%, transparent);
+  border-top: 2.5px solid var(--cc); border-left: 1.5px solid var(--cc); border-right: 1.5px solid var(--cc);
+  font: 600 14px/1 var(--display); padding: 0 8px; align-items: center;
+}
+.sp.aux { border-style: dotted; border-top-style: dotted; background: transparent; }
+.sp.aux .sp-l { font-style: italic; font-weight: 500; }
+.sp.elide { clip-path: none; border-left-style: dashed; padding-left: 10px; }
+.sp.sel { background: color-mix(in srgb, var(--cc) 20%, transparent); box-shadow: inset 0 0 0 1.5px var(--focus); }
+.sp.hc::after { width: 5px; height: 5px; top: 6px; }
+.mk-g { background: transparent; color: var(--mk); border: 1.5px solid var(--mk); border-radius: 50%; font: 700 10px/13px var(--display); width: 16px; height: 16px; }
+.mk-l { font-family: var(--display); font-style: italic; font-size: 13px; }
+.stem { border-left-style: dotted; }
+.is { border-radius: 1px; height: auto; top: 13px; bottom: 13px; opacity: .85; }
+.ph { width: 1.5px; background: var(--accent); }
+.ph::before { border-top-color: var(--accent); }
+
+.lookcard { border-radius: 2px; }
+.lookswatch { border-radius: 1px; }
+.toast { border-radius: 2px; font-family: var(--display); font-size: 14.5px; }
