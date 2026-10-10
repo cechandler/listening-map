@@ -1,0 +1,14 @@
+{
+  "id": "musictech-example",
+  "scriptId": "",
+  "deploymentId": "",
+  "COURSE": "Music Technology",
+  "TEACHERS": ["chandlec@union.edu"],
+  "ACCESS": "DOMAIN",
+  "SUBMIT": true,
+  "THEME": "tapedeck",
+  "THEMES": ["tapedeck", "keycap", "studio", "score"],
+  "VOCAB": ["Song form", "Production"],
+  "MARKER_CHIPS": ["Drop", "Build", "Riser", "Filter sweep", "Beat drops out", "Beat returns", "New layer", "Key change", "Tempo change", "Climax"],
+  "LEVEL_NAMES": ["Sections", "Large form"]
+}

@@ -1,0 +1,118 @@
+/* ===== Tape deck =====
+   Studio hardware for the music technology course: brushed-metal panels (light) or a dark console (dark), a
+   backlit LCD time readout, square hardware buttons, and blocks drawn like clips in a DAW arrangement (a colored
+   header strip over a tinted body). Space Grotesk for type, JetBrains Mono for readouts and labels.
+   Written as plain CSS; the build scopes it to :root[data-skin="tapedeck"]. */
+
+:root {
+  --bg: #C9CCC7; --surface: #E6E8E4; --surface-2: #D3D6D1; --line: #A9ADA6; --fg: #121311; --muted: #4D524B;
+  --accent: #D9480F; --focus: #0B6BCB; --wave: #9EF01A; --grid: rgba(18,19,17,.1); --mk: #121311;
+  --lcd-bg: #0E0F0D; --lcd-fg: #9EF01A; --lcd-dim: #4E7A12; --bevel-hi: rgba(255,255,255,.75); --bevel-lo: rgba(0,0,0,.22);
+  --c-rose: #E0315B; --c-amber: #E99A0B; --c-olive: #79A11A; --c-green: #1E9E58; --c-teal: #0E978C;
+  --c-sky: #158BC9; --c-blue: #4253DB; --c-violet: #7C46E0; --c-plum: #BF35AC; --c-slate: #5F6A78;
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --ui: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gut: 124px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D0E10; --surface: #1A1C1F; --surface-2: #141518; --line: #2D3036; --fg: #E4E6EA; --muted: #8D939C;
+  --accent: #FF7A1A; --focus: #4DA3FF; --wave: #9EF01A; --grid: rgba(228,230,234,.06); --mk: #FF7A1A;
+  --lcd-bg: #050606; --lcd-fg: #9EF01A; --lcd-dim: #3F6610; --bevel-hi: rgba(255,255,255,.07); --bevel-lo: rgba(0,0,0,.6);
+  --c-rose: #FF5C83; --c-amber: #FFB52E; --c-olive: #A9D63E; --c-green: #3BDB86; --c-teal: #2FD3C4;
+  --c-sky: #3DB5FF; --c-blue: #7D8BFF; --c-violet: #A97BFF; --c-plum: #F06BE0; --c-slate: #8C97A6;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0D0E10; --surface: #1A1C1F; --surface-2: #141518; --line: #2D3036; --fg: #E4E6EA; --muted: #8D939C;
+  --accent: #FF7A1A; --focus: #4DA3FF; --wave: #9EF01A; --grid: rgba(228,230,234,.06); --mk: #FF7A1A;
+  --lcd-bg: #050606; --lcd-fg: #9EF01A; --lcd-dim: #3F6610; --bevel-hi: rgba(255,255,255,.07); --bevel-lo: rgba(0,0,0,.6);
+  --c-rose: #FF5C83; --c-amber: #FFB52E; --c-olive: #A9D63E; --c-green: #3BDB86; --c-teal: #2FD3C4;
+  --c-sky: #3DB5FF; --c-blue: #7D8BFF; --c-violet: #A97BFF; --c-plum: #F06BE0; --c-slate: #8C97A6;
+  color-scheme: dark; }
+
+body { background: var(--bg); }
+/* Panels are faceplates: a top highlight and a bottom shadow, with screw heads in the corners of the transport. */
+.card, .transport, .pop, .tl, header.top, .copybox {
+  border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff), var(--surface));
+  box-shadow: inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo), 0 1px 2px var(--bevel-lo);
+}
+header.top { padding: 10px 14px; }
+.transport { position: relative; padding: 14px 22px; }
+.transport::before, .transport::after {
+  content: ""; position: absolute; top: 6px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--bevel-hi), var(--line) 60%); box-shadow: inset 0 0 0 1px var(--bevel-lo);
+}
+.transport::before { left: 6px; } .transport::after { right: 6px; }
+.brand h1 { font: 700 21px/1 var(--display); letter-spacing: -0.02em; text-transform: uppercase; }
+.brand h1::after { content: " ●"; color: var(--accent); font-size: 0.6em; vertical-align: 0.25em; }
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th, .lab { font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10.5px; }
+.card h2, .lookhead h2, .pop h2 { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.02em; font-size: 14px; }
+
+/* Hardware buttons: square, bevelled, and they sink when pressed. */
+.btn, .seg button, .tab {
+  font: 600 12.5px/1 var(--ui); letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 85%, #fff), var(--surface-2));
+  box-shadow: inset 0 1px 0 var(--bevel-hi), 0 2px 0 var(--bevel-lo), 0 2px 3px var(--bevel-lo);
+}
+.btn:active:not([disabled]), .seg button:active { transform: translateY(1px); box-shadow: inset 0 2px 3px var(--bevel-lo); }
+.btn.pri { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #fff), var(--accent)); color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, #000); }
+.btn kbd { background: transparent; color: inherit; border-color: currentColor; }
+.seg { border-radius: 4px; border: 0; gap: 2px; overflow: visible; }
+.seg button + button { border-left: 1px solid color-mix(in srgb, var(--fg) 30%, var(--line)); }
+.seg button[aria-pressed=true], .tab[aria-selected=true] { background: var(--lcd-bg); color: var(--lcd-fg); box-shadow: inset 0 2px 4px #000; border-color: #000; }
+/* A lit LED in a selected tab. */
+.tabs { border-bottom: 0; gap: 6px; margin: 0 0 12px; padding: 0; }
+.tab { padding: 8px 12px; margin: 0; }
+.tab[aria-selected=true]::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--lcd-fg); box-shadow: 0 0 6px var(--lcd-fg); margin-right: 7px; vertical-align: 1px; }
+
+/* Transport: a round play button with a ring, and an LCD readout. */
+.play { width: 48px; height: 48px; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 75%, #fff), var(--accent) 70%); box-shadow: 0 0 0 4px var(--surface-2), 0 0 0 5px var(--line), 0 3px 6px var(--bevel-lo); }
+.play:active { transform: translateY(1px); }
+.readout {
+  font: 500 24px/1 var(--mono); background: var(--lcd-bg); color: var(--lcd-fg); border-radius: 4px; padding: 8px 12px 6px; min-width: 132px;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--lcd-fg) 55%, transparent); box-shadow: inset 0 2px 6px #000, 0 1px 0 var(--bevel-hi);
+}
+.readout small { color: var(--lcd-dim); text-shadow: none; }
+.sep { background: color-mix(in srgb, var(--fg) 20%, transparent); }
+.toggle input { accent-color: var(--accent); }
+
+/* Inputs look like screens. */
+.pop input[type=text], .field input[type=text], .field input[type=number], .field textarea, .field select, .copybox textarea {
+  background: var(--surface-2); border: 1px solid color-mix(in srgb, var(--fg) 25%, var(--line)); border-radius: 3px; box-shadow: inset 0 1px 3px var(--bevel-lo);
+}
+.chip { border-radius: 3px; font: 500 11.5px var(--mono); background: var(--surface-2); border-color: color-mix(in srgb, var(--fg) 22%, var(--line)); }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.sw { border-radius: 2px; }
+kbd { border-radius: 3px; background: var(--surface-2); font-family: var(--mono); }
+
+/* The arrangement: dark lanes, mono lane names, clips with a header strip. */
+.tl { background: var(--surface-2); padding: 0; }
+.lab { background: linear-gradient(90deg, var(--surface), var(--surface-2)); border-right: 1px solid color-mix(in srgb, var(--fg) 25%, var(--line)); }
+.r-tier.act .lab { box-shadow: inset 3px 0 0 var(--accent); color: var(--fg); }
+.r-ruler .trk { background: var(--surface); }
+.tk b { font-family: var(--mono); font-size: 10px; }
+.r-tier { height: 50px; }
+.sp {
+  top: 4px; bottom: 4px; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--cc) 70%, #000); padding: 14px 7px 0;
+  align-items: flex-start; font: 600 11.5px var(--ui); letter-spacing: 0.02em;
+  background: linear-gradient(180deg, var(--cc) 0 12px, color-mix(in srgb, var(--cc) 26%, var(--surface-2)) 12px);
+}
+.sp.aux { border-style: dashed; background: linear-gradient(180deg, var(--cc) 0 12px, transparent 12px), repeating-linear-gradient(135deg, color-mix(in srgb, var(--cc) 18%, var(--surface-2)) 0 5px, var(--surface-2) 5px 10px); }
+.sp.elide { padding-left: 14px; }
+.sp.sel { box-shadow: 0 0 0 2px var(--surface-2), 0 0 0 3px var(--fg); }
+.sp.hc::after { top: 3px; right: 4px; background: #fff; width: 5px; height: 5px; }
+.mk-g { border-radius: 2px; background: var(--mk); color: var(--surface); font-family: var(--mono); }
+.stem { border-left-color: var(--mk); }
+.is { border-radius: 2px; opacity: .9; background: linear-gradient(180deg, var(--cc) 0 4px, color-mix(in srgb, var(--cc) 55%, var(--surface-2)) 4px); }
+.ph, .ph::before { background: var(--accent); }
+.ph { box-shadow: 0 0 6px var(--accent); }
+.ph::before { background: none; border-top-color: var(--accent); }
+.r-wave .trk { background: var(--lcd-bg); }
+.r-wave .wavemsg { color: var(--lcd-dim); font-family: var(--mono); }
+
+.cm-h { font-family: var(--display); }
+.lookcard { border-radius: 4px; box-shadow: inset 0 1px 0 var(--bevel-hi), 0 2px 3px var(--bevel-lo); }
+.lookcard.on { box-shadow: 0 0 0 2px var(--accent); }
+.lookswatch { border-radius: 3px; }
+.toast { background: var(--lcd-bg); color: var(--lcd-fg); font-family: var(--mono); border-radius: 4px; }
