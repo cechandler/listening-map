@@ -14,13 +14,15 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const errors = [];
 const step = async (name, fn) => { process.stdout.write("  " + name + " ... "); await fn(); console.log("ok"); };
 
-async function open(q = "", opts = {}) {
+async function open(q = "", { keepExample, ...opts } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true, ...opts });
   const page = await ctx.newPage();
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/fonts\.g|youtube|ERR_|net::/.test(m.text())) errors.push(m.text()); });
   await page.goto(url + q);
   await page.waitForFunction(() => typeof S === "object" && S && document.querySelector(".sp"));
+  // The steps below are written against the demo track's analysis, whichever example the course opens with.
+  if (!keepExample) await page.evaluate(() => openExample("demo"));
   return page;
 }
 // The time under a screen x on the timeline, so zooming can be checked to keep the pointer's moment in place.
@@ -34,6 +36,26 @@ await step("boots with the course's default theme and course name", async () => 
   const cfg = await page.evaluate(() => CONFIG);
   assert.equal(await page.evaluate(() => document.documentElement.dataset.skin), cfg.THEME);
   assert.match(await page.textContent("#courseName"), new RegExp(cfg.COURSE));
+});
+
+await step("the course's example opens first, and Settings lists both examples", async () => {
+  const ep = await open("", { keepExample: true });
+  const want = (await ep.evaluate(() => CONFIG.EXAMPLE)) || "demo";
+  const s = await ep.evaluate(() => ({ title: S.meta.title, example: isExample(), levels: S.tiers.length, markers: S.markers.map(m => m.label) }));
+  if (want === "k545") {
+    assert.match(s.title, /K\. 545/);
+    assert.equal(s.levels, 3);
+    assert.ok(s.markers.includes("Recap in F"));
+    // Blocks on each level run end to end, in order, across the recording.
+    const ok = await ep.evaluate(() => S.tiers.every(t => t[0].start === 0 && Math.abs(t[t.length - 1].end - dur()) < 1e-6 && t.every((b, i) => !i || Math.abs(b.start - t[i - 1].end) < 1e-6 && b.end > b.start)));
+    assert.ok(ok, "each level covers the recording without gaps or overlaps");
+  }
+  assert.equal(s.example, true);
+  await ep.click("#bMenu");
+  assert.deepEqual(await ep.locator("#exampleList .mi").allTextContents(), ["Demo track (generated)", "Mozart, Piano Sonata K. 545, I"]);
+  await ep.click("[data-ex=demo]");
+  assert.equal(await ep.evaluate(() => S.source.type), "demo");
+  await ep.context().close();
 });
 
 await step("Ctrl + wheel zooms around the pointer (mouse wheel and Chrome trackpad pinch)", async () => {
@@ -91,7 +113,9 @@ await step("touchscreen two-finger pinch", async () => {
   const tp = await open("", { hasTouch: true });
   await tp.click("#zFit");
   const box = await tp.locator("#tl").boundingBox();
-  const cy = box.y + 140, p0 = await tp.evaluate(() => pps);
+  // Start on a block: tapping one selects it and redraws before the browser sends touchstart.
+  const blk = await tp.locator(".sp").first().boundingBox();
+  const cy = blk.y + blk.height / 2, p0 = await tp.evaluate(() => pps);
   const cdp = await tp.context().newCDPSession(tp);
   const pts = d => [{ x: box.x + 400 - d, y: cy, id: 1 }, { x: box.x + 400 + d, y: cy, id: 2 }];
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pts(40) });

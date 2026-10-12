@@ -409,6 +409,8 @@ function keepTouched(){
 }
 const countTouches = e => { touchesDown = e.touches.length; if (!touchesDown){ const k = document.getElementById('touchKeep'); if (k) k.remove(); } };
 ['touchstart', 'touchend', 'touchcancel'].forEach(t => document.addEventListener(t, countTouches, {passive: true, capture: true}));
+// A finger's pointerdown comes before its touchstart, and a tap on a block redraws at once, so count the finger from there.
+document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') touchesDown = Math.max(touchesDown, 1); }, {passive: true, capture: true});
 function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
 
 /* ---------- rendering: inspector ---------- */
@@ -1073,10 +1075,18 @@ function demoState(){
 /* ---------- Mozart example: Piano Sonata in C, K. 545, I (YouTube, score-synced) ---------- */
 // The map is written in measures. K545_TIMES holds the start time (seconds) of anchor measures in the video, for each
 // pass in the order played; the times between anchors are spread evenly over the measures. 'end' is when the last
-// chord dies away.
+// chord dies away. The anchors were found by matching the recording's harmony, measure by measure, to the score
+// (the repeat to the first pass, and the recapitulation to the exposition a fourth higher). Ingrid Haebler takes
+// the exposition repeat and not the second one.
 const K545_VIDEO = 'I_AX4R-d29o';
-// Shape: {passes: [{part: 'expo', at: {1: s, 13: s}}, {part: 'dev', at: {29: s, 42: s, 58: s}}, ...], end: s}.
-const K545_TIMES = null;
+const K545_TIMES = {
+  passes: [
+    {part: 'expo', at: {1: 7.34, 5: 15.23, 12: 28.05, 13: 30.09, 14: 32.00, 26: 54.52, 28: 58.31}},
+    {part: 'expo', at: {1: 61.39, 5: 69.17, 13: 84.13, 14: 86.01, 26: 108.41, 28: 112.22}},
+    {part: 'dev', at: {29: 114.87, 42: 139.58, 46: 147.35, 57: 167.5, 58: 169.4, 59: 171.29, 71: 193.58, 73: 197.32}}
+  ],
+  end: 202
+};
 function k545State(){
   // Passes in playing order: the exposition (mm. 1-28) and the development and recapitulation (mm. 29-73), each with its repeat if taken.
   const passes = K545_TIMES.passes, end = K545_TIMES.end;
@@ -1095,7 +1105,7 @@ function k545State(){
     if (p.part === 'expo'){
       s(0, 1, 4, 'P', 'teal', {comment: 'mm. 1–4. The primary theme in C: a singing right hand over an Alberti bass.'});
       s(0, 5, 12, 'TR', 'amber', {comment: 'mm. 5–12. Sixteenth-note scales descend in sequence, then broken chords push toward D major, the dominant of G.'});
-      s(0, 13, 13, 'Lead-in', 'slate', {aux: true, comment: 'm. 13. One bar of accompaniment in G before the new theme enters.'});
+      s(0, 13, 13, 'Lead-in', 'slate', {aux: true, comment: 'm. 13. One bar of accompaniment over the dominant of G before the new theme enters.'});
       s(0, 14, 25, 'S', 'rose', {comment: 'mm. 14–25. The secondary theme, in G major, the dominant.'});
       s(0, 26, 28, 'Codetta', 'sky', {comment: 'mm. 26–28. Closing gestures that confirm G.'});
       s(1, 1, 28, again ? 'Exposition (repeat)' : 'Exposition', 'teal', {texture: again ? 'stripes' : 'solid', comment: 'mm. 1–28. Moves from C to G, the dominant.'});
@@ -1129,7 +1139,7 @@ function k545State(){
   return {app: 'listening-map', version: 1,
     meta: {title: 'Piano Sonata in C, K. 545, I. Allegro', composer: 'Wolfgang Amadeus Mozart', student: 'Example analysis',
       notes: 'Sonata form. The exposition moves from C to G; the development begins in G minor; the recapitulation begins in F, the subdominant, and is adjusted so the secondary theme returns in C. Measure numbers are in each comment.'},
-    source: {type: 'youtube', youtubeId: K545_VIDEO, name: 'Mozart, Piano Sonata K. 545, I (YouTube)', duration: end, example: true},
+    source: {type: 'youtube', youtubeId: K545_VIDEO, name: 'Mozart, Piano Sonata K. 545, I, Ingrid Haebler (YouTube)', duration: end, example: true},
     grid: {on: false, bpm: 144, bpb: 4, offset: 0, snap: false},
     tierNames: ['Themes', 'Sections', 'Large form'], tiers, markers, instruments: []};
 }
