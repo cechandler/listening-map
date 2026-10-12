@@ -32,7 +32,7 @@ body { font-size: 14.5px; }
 .brand .doc { font-family: var(--display); font-style: italic; font-size: 15px; }
 .card h2, .lookhead h2, .pop h2 { font: 700 18px/1.2 var(--display); }
 .ro-label, .lookname { font-family: var(--display); font-weight: 700; }
-.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th {
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th, .mlabel, .srow > span {
   font-family: var(--ui); font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.08em; font-size: 13px; font-weight: 600;
 }
 .cm-h { font-family: var(--display); font-size: 15px; }

@@ -18,15 +18,18 @@ let SESSION = null;
 async function initCourse(){
   if (!IN_COURSE_FRAME && typeof MOCK_SERVER === 'undefined') return;
   try { SESSION = await server('getSession'); }
-  catch(e){ showBanner(esc(serverMessage(e))); return; }
+  catch(e){ showBanner('Course features are unavailable: ' + esc(serverMessage(e))); return; }
   if (SESSION.course) $('#courseName').textContent = SESSION.course;
+  // Submit and Student submissions sit at the top of the Settings menu, only for those who can use them.
   $('#bSubmit').hidden = !SESSION.canSubmit;
   $('#bSubs').hidden = !SESSION.teacher;
+  $('#courseItems').hidden = !SESSION.canSubmit && !SESSION.teacher;
+  $('#courseLabel').textContent = SESSION.course || 'Course';
   $('#bSubmit').onclick = openSubmit;
   $('#subCancel').onclick = () => { $('#submitPop').hidden = true; };
   $('#submitPop').onsubmit = e => { e.preventDefault(); doSubmit(); };
-  $('#bSubs').onclick = () => { const p = $('#subsPanel'); p.hidden = !p.hidden; if (!p.hidden) loadSubs(); };
-  $('#subsClose').onclick = () => { $('#subsPanel').hidden = true; };
+  $('#bSubs').onclick = () => showSubs(true);
+  $('#subsClose').onclick = () => showSubs(false);
   $('#subsRefresh').onclick = loadSubs;
   $('#subsFilter').onchange = renderSubs;
   $('#subsList').addEventListener('click', e => { const b = e.target.closest('[data-sub]'); if (b) openSubmission(b.dataset.sub, b); });
@@ -34,33 +37,56 @@ async function initCourse(){
 }
 
 /* ---------- students: submit ---------- */
+// What the instructor will receive, so the student can check it before sending.
+function submitSummary(){
+  const blocks = S.tiers.reduce((n, t) => n + t.length, 0), labeled = S.tiers.reduce((n, t) => n + t.filter(s => s.label).length, 0);
+  const comments = S.tiers.flat().concat(S.markers).filter(x => x.comment).length + S.instruments.reduce((n, i) => n + i.spans.filter(s => s.comment).length, 0);
+  const src = S.source.type === 'youtube' ? 'YouTube video' : S.source.type === 'demo' ? 'the example track' : (S.source.name || 'audio file') + ' (the file itself is not sent)';
+  const row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
+  return row('Piece', esc(S.meta.title || 'Untitled') + (S.meta.composer ? ', ' + esc(S.meta.composer) : ''))
+    + row('Recording', esc(src))
+    + row('Analysis', `${blocks} blocks (${labeled} labeled) on ${S.tiers.length} ${S.tiers.length === 1 ? 'level' : 'levels'}, ${S.markers.length} markers, ${S.instruments.length} instruments, ${comments} comments`);
+}
+function mineList(){
+  const mine = SESSION.mine || [];
+  return mine.length ? `Your earlier submissions: ${mine.slice(0, 5).map(m => `${esc(m.assignment || m.title || 'Analysis')} (${esc(whenText(m.when))}) <button class="btn sm" type="button" data-sub="${esc(m.id)}">Open</button>`).join(' · ')}` : '';
+}
 function openSubmit(){
   if (!SESSION) return;
-  const pop = $('#submitPop'), asg = SESSION.assignments || [];
+  const asg = SESSION.assignments || [], demo = S.source.type === 'demo';
   $('#subCourse').textContent = SESSION.course || 'your course';
+  $('#subHead').textContent = 'Hand in this analysis';
+  $('#subForm').hidden = false; $('#subDone').hidden = true; $('#subCancel').textContent = 'Cancel';
   $('#subAsgWrap').hidden = !asg.length;
   $('#subAsg').innerHTML = asg.map(a => `<option>${esc(a)}</option>`).join('');
   $('#subName').value = S.meta.student || SESSION.name || '';
-  const mine = SESSION.mine || [];
-  const src = S.source.type === 'file' ? ' Your audio file is not sent, only the analysis. Your instructor needs the same recording to hear it.' : '';
-  $('#subNote').innerHTML = (S.source.type === 'demo' ? '<b>This is the example analysis.</b> Open your own audio or a YouTube link first. ' : '')
-    + `Signed in as ${esc(SESSION.email)}. You can submit again; your instructor sees every version.${src}`
-    + (mine.length ? `<br>Your submissions: ${mine.slice(0, 5).map(m => `${esc(m.assignment || m.title || 'Analysis')} (${esc(whenText(m.when))}) <button class="btn sm" type="button" data-sub="${esc(m.id)}">Open</button>`).join(' · ')}` : '');
-  pop.hidden = false; $('#subName').focus();
+  $('#subWhat').innerHTML = submitSummary();
+  $('#subGo').disabled = demo;
+  $('#subNote').innerHTML = demo
+    ? '<b>This is the example analysis, so it can’t be submitted.</b> Load your own recording with <b>Open audio</b> or <b>YouTube link</b> (under Source, beside the play controls), make your analysis, then come back here.'
+    : `Signed in as ${esc(SESSION.email)}. You can submit again after more work; your instructor sees every version, newest first.`;
+  $('#subMine').innerHTML = mineList();
+  $('#submitPop').hidden = false;
+  $('#submitPop').scrollIntoView({block: 'nearest'});
+  if (!demo) $('#subName').focus();
 }
 async function doSubmit(){
   const name = $('#subName').value.trim();
+  if (S.source.type === 'demo') return;
   if (!name){ toast('Add your name first.'); $('#subName').focus(); return; }
-  if (S.source.type === 'demo'){ toast('Open your own audio or a YouTube link and make your analysis first.'); return; }
   if (name !== S.meta.student) edit(() => { S.meta.student = name; });
   renderInfo();
   const go = $('#subGo'); go.disabled = true; go.textContent = 'Submitting…';
   try {
     const r = await server('submitAnalysis', {assignment: $('#subAsgWrap').hidden ? '' : $('#subAsg').value, json: JSON.stringify(S)});
     SESSION.mine = [r, ...(SESSION.mine || [])];
-    $('#submitPop').hidden = true;
-    showBanner(`Submitted${r.assignment ? ' for <b>' + esc(r.assignment) + '</b>' : ''} at ${esc(whenText(r.when))}. Keep your exported file too, in case you want to keep working on it.`);
-  } catch(e){ toast(serverMessage(e)); }
+    $('#subHead').textContent = 'Submitted';
+    $('#subForm').hidden = true; $('#subCancel').textContent = 'Done';
+    $('#subDone').hidden = false;
+    $('#subDone').innerHTML = `<p><b>Your instructor has it.</b> Sent${r.assignment ? ' for <b>' + esc(r.assignment) + '</b>' : ''} at ${esc(whenText(r.when))}.</p>
+      <p class="note">Keep working if you like and submit again; each version is kept. Export the analysis from Settings to keep your own copy.</p>`;
+    $('#subMine').innerHTML = mineList();
+  } catch(e){ $('#subNote').innerHTML = '<b>Not submitted.</b> ' + esc(serverMessage(e)); toast('Not submitted: ' + serverMessage(e)); }
   finally { go.disabled = false; go.textContent = 'Submit'; }
 }
 function whenText(iso){
@@ -70,6 +96,10 @@ function whenText(iso){
 
 /* ---------- instructors: submissions ---------- */
 let SUBS = [];
+function showSubs(on){
+  $('#subsPanel').hidden = !on;
+  if (on){ loadSubs(); $('#subsPanel').scrollIntoView({block: 'nearest'}); }
+}
 async function loadSubs(){
   $('#subsList').innerHTML = '<p class="note">Loading…</p>';
   try { SUBS = await server('listSubmissions'); }
@@ -86,14 +116,23 @@ function renderSubs(){
       <td>${esc(s.title || '')}${s.composer ? `<div class="meta">${esc(s.composer)}</div>` : ''}</td><td class="meta">${esc(whenText(s.when))}</td>
       <td class="meta">${esc(s.blocks)}</td><td class="meta">${esc(s.comments)}</td>
       <td><button class="btn sm" type="button" data-sub="${esc(s.id)}">Open</button></td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="note">No submissions yet. Students see a Submit button once they are signed in.</p>';
+    : '<p class="note">No submissions yet. Students find <b>Submit to your instructor</b> in the Settings menu once they are signed in.</p>';
 }
 async function openSubmission(id, btn){
   if (btn) btn.disabled = true;
+  const info = SUBS.find(s => s.id === id) || (SESSION && SESSION.mine || []).find(s => s.id === id) || {};
   try {
     const text = await server('getSubmission', id);
     let data; try { data = JSON.parse(text); } catch(e){ toast('That submission could not be read.'); return; }
-    if (openAnalysis(data, 'the submission')){ $('#submitPop').hidden = true; window.scrollTo({top: 0}); }
+    if (!openAnalysis(data, 'the submission')) return;
+    $('#submitPop').hidden = true; $('#subsPanel').hidden = true;
+    // Say whose work is on screen, and keep the way back to the list.
+    const who = info.name || data.meta && data.meta.student || info.email || 'A student';
+    const audio = S.source.type === 'file' ? ` Load <b>${esc(S.source.name)}</b> to listen along. <label class="btn sm" for="fAudio">Choose audio file</label>` : '';
+    showBanner(`Viewing <b>${esc(who)}</b>’s submission${info.assignment ? ' for <b>' + esc(info.assignment) + '</b>' : ''}${info.when ? ', sent ' + esc(whenText(info.when)) : ''}. Edits here are not sent back.${audio}`
+      + (SESSION && SESSION.teacher ? ` <button class="btn sm" type="button" id="subsBack">Back to submissions</button>` : ''));
+    const back = $('#subsBack'); if (back) back.onclick = () => showSubs(true);
+    window.scrollTo({top: 0});
   } catch(e){ toast(serverMessage(e)); }
   finally { if (btn) btn.disabled = false; }
 }

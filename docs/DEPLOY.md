@@ -25,7 +25,7 @@ Each course offering gets its own Google Sheet and Apps Script project in the in
 The **Assignments** tab lists what students can submit for: a title in column A, and `no` in column B (Open) to stop taking submissions for it. Students pick one from a menu when they submit. With no rows, they submit without choosing. Changes take effect on the student's next page load; no redeploy.
 
 ## Submissions
-Each submission is saved as a `.listening-map.json` file in the course's Drive folder and logged on the **Submissions** tab (who, when, assignment, piece, source, and counts of blocks, markers, and comments, with a link to the file). Students can submit more than once; every version is kept. In the page, instructors press **Submissions** to list them by assignment and **Open** any one on the timeline. Students see their own past submissions in the Submit box and can reopen them on another computer.
+Each submission is saved as a `.listening-map.json` file in the course's Drive folder and logged on the **Submissions** tab (who, when, assignment, piece, source, and counts of blocks, markers, and comments, with a link to the file). Students can submit more than once; every version is kept. In the page, instructors choose **Settings → Student submissions** to list them by assignment and **Open** any one on the timeline. Students see their own past submissions in the Submit dialog (**Settings → Submit to your instructor**) and can reopen them on another computer.
 
 For an audio-file analysis only the analysis is submitted, not the recording; open the same recording with **Open audio** to hear it. YouTube analyses play right away.
 
