@@ -6,13 +6,16 @@
 const LOOKS = [
   {id: 'studio', name: 'Studio', blurb: 'Quiet and clean. The original look.',
    fonts: 'family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500',
-   light: ['#eef0f3', '#ffffff', '#c2550f', '#1b8cc4', '#181c24'], dark: ['#12151b', '#1a1e26', '#f08a3c', '#52b8ec', '#e7eaf0']},
+   light: ['#dfe3ea', '#fbfcfd', '#b54a08', '#127cb3', '#11151d'], dark: ['#12151b', '#1a1e26', '#f08a3c', '#52b8ec', '#e7eaf0']},
   {id: 'keycap', name: 'Keycap', blurb: 'Warm paper, ink outlines, hard shadows, and red keys that press down.',
    fonts: 'family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500',
    light: ['#F3EFE6', '#FFFDF8', '#C8291D', '#84CC5F', '#161513'], dark: ['#141311', '#1D1B18', '#FF6A5C', '#9BDC78', '#ECE7DC']},
   {id: 'tapedeck', name: 'Tape deck', blurb: 'Studio hardware: an LCD readout and clips like a DAW arrangement.',
    fonts: 'family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700',
    light: ['#D5D7D3', '#E9EAE7', '#E8590C', '#0E0F0D', '#9EF01A'], dark: ['#0F1012', '#1A1C1F', '#FF7A1A', '#050606', '#9EF01A']},
+  {id: 'chalk', name: 'Chalk', blurb: 'The classroom board: hand-lettered labels and marker strokes. A whiteboard in light, a chalkboard in dark.',
+   fonts: 'family=Kalam:wght@400;700&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700',
+   light: ['#ECEEE8', '#FBFBF7', '#D3263A', '#1D5FC4', '#20242B'], dark: ['#1C2A24', '#24352D', '#F4D35E', '#8FD3F4', '#EDEFE6']},
   {id: 'score', name: 'Score', blurb: 'Engraved paper: serif headings, hairline rules, and bracketed sections.',
    fonts: 'family=Spectral:ital,wght@0,500;0,700;1,500&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500',
    light: ['#FBF8F1', '#FFFFFF', '#7E1A2A', '#1E6E47', '#1B1A17'], dark: ['#17161A', '#201F24', '#E8899A', '#7FD1A6', '#EAE6DD']}

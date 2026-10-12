@@ -34,6 +34,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const gut = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gut')) || 120;
 const mk = (start, end, label = '', color = 'slate', o = {}) => ({id: uid(), start, end, label, color, aux: false, elide: false, comment: '', ...o});
 
+// The active lane takes Split, and Enter/Exit for instruments: a level (activeTier) or an instrument (activeInst).
+let laneFocus = 'tier', activeInst = null;
 let S, pps = 10, sel = null, activeTier = 0, presenting = false, peaks = null, undoStack = [], redoStack = [], pendingAudio = null, waveMsg = '';
 
 /* ---------- time helpers ---------- */
@@ -62,12 +64,17 @@ function doUndo(){ if (!undoStack.length || presenting) return; redoStack.push(s
 function doRedo(){ if (!redoStack.length || presenting) return; undoStack.push(snapshot()); S = JSON.parse(redoStack.pop()); validateSel(); renderAll(); renderInfo(); }
 function validateSel(){
   activeTier = clamp(activeTier, 0, S.tiers.length - 1);
+  if (activeInst && !S.instruments.some(i => i.id === activeInst)){ activeInst = null; laneFocus = 'tier'; }
   if (!sel) return;
   if (sel.kind === 'span'){ const arr = S.tiers[sel.tier]; if (!arr){ sel = null; return; } sel.ids = sel.ids.filter(id => arr.some(s => s.id === id)); if (!sel.ids.length) sel = null; }
   else if (sel.kind === 'tier'){ if (!S.tiers[sel.tier]) sel = null; }
   else if (sel.kind === 'marker'){ if (!S.markers.some(m => m.id === sel.id)) sel = null; }
   else if (sel.kind === 'inst'){ if (!S.instruments.some(i => i.id === sel.id)) sel = null; }
-  else if (sel.kind === 'ispan'){ const i = S.instruments.find(i => i.id === sel.inst); if (!i || !i.spans.some(s => s.id === sel.id)) sel = null; }
+  else if (sel.kind === 'ispan'){
+    const i = S.instruments.find(i => i.id === sel.inst); if (!i){ sel = null; return; }
+    const ids = selIds().filter(id => i.spans.some(s => s.id === id));
+    if (!ids.length) sel = null; else { if (!ids.includes(sel.id)) sel.id = ids[0]; sel.ids = ids; }
+  }
 }
 
 /* ---------- player ---------- */
@@ -156,12 +163,104 @@ function splitTier(k, t){
   s.end = t; arr.splice(i + 1, 0, r); return r;
 }
 function selSpans(){ if (!sel || sel.kind !== 'span') return []; return S.tiers[sel.tier].filter(s => sel.ids.includes(s.id)); }
+// Instrument entries can be selected together (Shift + click); sel.id is the one clicked first.
+const selIds = () => sel ? sel.ids || [sel.id] : [];
+function selEntries(){ if (!sel || sel.kind !== 'ispan') return []; const i = S.instruments.find(i => i.id === sel.inst); return i ? i.spans.filter(s => selIds().includes(s.id)) : []; }
+const focusTier = k => { activeTier = k; laneFocus = 'tier'; };
+const focusInst = id => { activeInst = id; laneFocus = 'inst'; };
+// Splits the active lane at the playhead: the level or instrument of the region selected most recently.
 function cmdSplit(){
   if (presenting) return;
   const t = snapT(P.t()); let r = null;
+  const ins = laneFocus === 'inst' && S.instruments.find(i => i.id === activeInst);
+  if (ins){
+    const s = ins.spans.find(s => t > s.start + 0.05 && t < s.end - 0.05);
+    if (!s){ toast(ins.spans.some(s => t >= s.start && t <= s.end) ? 'There is already a boundary at the playhead.' : ins.name + ' is not playing at the playhead.'); return; }
+    edit(() => { r = {...s, id: uid(), start: t, comment: ''}; s.end = t; ins.spans.push(r); ins.spans.sort((a, b) => a.start - b.start); sel = {kind: 'ispan', inst: ins.id, id: r.id}; });
+    return;
+  }
   edit(() => { r = splitTier(activeTier, t); if (r) sel = {kind: 'span', tier: activeTier, ids: [r.id]}; });
   if (!r) toast('There is already a boundary at the playhead.');
   else focusLabel();
+}
+// J: join the selected neighboring blocks (or instrument entries) into one.
+function cmdJoinSel(){
+  if (presenting || !sel) return;
+  if (sel.kind === 'span'){
+    const sp = selSpans(), k = sel.tier, arr = S.tiers[k];
+    if (sp.length < 2){ toast('Shift + click a neighboring block to select both, then press J.'); return; }
+    const idx = sp.map(s => arr.indexOf(s)).sort((a, b) => a - b);
+    for (let i = 1; i < idx.length; i++) if (idx[i] !== idx[i - 1] + 1){ toast('Joined blocks must be next to each other.'); return; }
+    return edit(() => {
+      const keep = arr[idx[0]], rest = idx.slice(1).map(i => arr[i]);
+      keep.end = rest[rest.length - 1].end;
+      if (!keep.label) keep.label = (rest.find(s => s.label) || {}).label || '';
+      keep.comment = [keep.comment, ...rest.map(s => s.comment)].filter(Boolean).join('\n');
+      S.tiers[k] = arr.filter(s => !rest.includes(s));
+      sel = {kind: 'span', tier: k, ids: [keep.id]};
+    });
+  }
+  if (sel.kind === 'ispan'){
+    const es = selEntries().sort((a, b) => a.start - b.start), ins = S.instruments.find(i => i.id === sel.inst);
+    if (es.length < 2){ toast('Shift + click another entry in this lane to select both, then press J.'); return; }
+    return edit(() => {
+      const keep = es[0], rest = es.slice(1);
+      keep.end = Math.max(...es.map(s => s.end));
+      keep.comment = [keep.comment, ...rest.map(s => s.comment)].filter(Boolean).join('\n');
+      ins.spans = ins.spans.filter(s => !rest.includes(s) && (s === keep || s.start >= keep.end || s.end <= keep.start));
+      sel = {kind: 'ispan', inst: ins.id, id: keep.id};
+    });
+  }
+  toast('Select neighboring blocks or instrument entries to join.');
+}
+// E and X: the active instrument enters or exits at the playhead, so entries can be marked while listening.
+function laneInst(){
+  if (sel && (sel.kind === 'inst' || sel.kind === 'ispan')) return S.instruments.find(i => i.id === (sel.kind === 'inst' ? sel.id : sel.inst));
+  return laneFocus === 'inst' ? S.instruments.find(i => i.id === activeInst) : null;
+}
+function cmdEnter(){
+  if (presenting) return;
+  const ins = laneInst(); if (!ins){ toast(S.instruments.length ? 'Press 1 to ' + Math.min(9, S.instruments.length) + ' to pick an instrument, then E when it enters.' : 'Add an instrument first.'); return; }
+  const t = snapT(P.t());
+  if (ins.spans.some(s => t >= s.start && t < s.end)){ toast(ins.name + ' is already playing here.'); return; }
+  edit(() => {
+    const next = ins.spans.filter(s => s.start > t).sort((a, b) => a.start - b.start)[0];
+    ins.spans.push({id: uid(), start: t, end: next ? next.start : dur(), comment: ''}); ins.spans.sort((a, b) => a.start - b.start);
+    focusInst(ins.id);
+  });
+  toast(ins.name + ' enters at ' + fmt(t));
+}
+function cmdExit(){
+  if (presenting) return;
+  const ins = laneInst(); if (!ins){ toast('Press 1 to 9 to pick an instrument, then X when it stops.'); return; }
+  const t = snapT(P.t()), s = ins.spans.find(s => t > s.start && t <= s.end);
+  if (!s){ toast(ins.name + ' is not playing at the playhead.'); return; }
+  edit(() => { s.end = t; focusInst(ins.id); });
+  toast(ins.name + ' exits at ' + fmt(t));
+}
+// 1 to 9: make that instrument the active lane.
+function pickInst(n){
+  const ins = S.instruments[n - 1]; if (!ins) return;
+  focusInst(ins.id); sel = {kind: 'inst', id: ins.id}; renderAll();
+  toast(n + ' · ' + ins.name + ': E enters, X exits, S splits');
+}
+// Levels are drawn top down from the highest; instruments top down in order. dir -1 moves up the screen.
+function moveTier(k, dir){
+  const j = k - dir; if (j < 0 || j >= S.tiers.length) return;
+  edit(() => {
+    [S.tiers[k], S.tiers[j]] = [S.tiers[j], S.tiers[k]];
+    [S.tierNames[k], S.tierNames[j]] = [S.tierNames[j], S.tierNames[k]];
+    if (sel && (sel.kind === 'span' || sel.kind === 'tier') && sel.tier === k) sel.tier = j;
+    else if (sel && (sel.kind === 'span' || sel.kind === 'tier') && sel.tier === j) sel.tier = k;
+    if (activeTier === k) activeTier = j; else if (activeTier === j) activeTier = k;
+  });
+  const a = cmFilter.has('t' + k), b = cmFilter.has('t' + j);
+  cmFilter.delete('t' + k); cmFilter.delete('t' + j); if (a) cmFilter.add('t' + j); if (b) cmFilter.add('t' + k);
+  renderComments();
+}
+function moveInst(id, dir){
+  const i = S.instruments.findIndex(x => x.id === id), j = i + dir; if (i < 0 || j < 0 || j >= S.instruments.length) return;
+  edit(() => { [S.instruments[i], S.instruments[j]] = [S.instruments[j], S.instruments[i]]; });
 }
 function cmdGroup(){
   if (presenting) return;
@@ -178,7 +277,7 @@ function cmdGroup(){
     const first = inside[0]; first.start = start; first.end = end;
     if (!first.label) first.color = arr[idx[0]].color;
     S.tiers[k + 1] = up.filter(s => s === first || !inside.includes(s));
-    sel = {kind: 'span', tier: k + 1, ids: [first.id]}; activeTier = k + 1;
+    sel = {kind: 'span', tier: k + 1, ids: [first.id]}; focusTier(k + 1);
   });
   focusLabel();
 }
@@ -202,7 +301,7 @@ function cmdDelete(dir){
   if (presenting || !sel) return;
   if (sel.kind === 'span') return cmdJoin(dir);
   if (sel.kind === 'marker') return edit(() => { S.markers = S.markers.filter(m => m.id !== sel.id); sel = null; });
-  if (sel.kind === 'ispan') return edit(() => { const i = S.instruments.find(i => i.id === sel.inst); i.spans = i.spans.filter(s => s.id !== sel.id); sel = {kind: 'inst', id: i.id}; });
+  if (sel.kind === 'ispan') return edit(() => { const i = S.instruments.find(i => i.id === sel.inst), ids = selIds(); i.spans = i.spans.filter(s => !ids.includes(s.id)); sel = {kind: 'inst', id: i.id}; });
 }
 function selStart(){
   if (!sel) return null;
@@ -220,7 +319,7 @@ function navSel(dx, dy, extend){
     k = clamp(k + dy, 0, S.tiers.length - 1); if (k === sel.tier) return;
     const mid = (cur[0].start + cur[0].end) / 2;
     const s = S.tiers[k].find(s => mid >= s.start && mid < s.end) || S.tiers[k][0];
-    sel = {kind: 'span', tier: k, ids: [s.id]}; activeTier = k;
+    sel = {kind: 'span', tier: k, ids: [s.id]}; focusTier(k);
   } else {
     const idxs = cur.map(s => arr.indexOf(s)); const edge = dx > 0 ? Math.max(...idxs) : Math.min(...idxs);
     const n = clamp(edge + dx, 0, arr.length - 1);
@@ -265,31 +364,36 @@ function renderTimeline(){
   h += `</div></div>`;
   for (let k = S.tiers.length - 1; k >= 0; k--){
     const arr = S.tiers[k], tsel = sel && sel.kind === 'tier' && sel.tier === k;
-    h += `<div class="row r-tier${k === activeTier ? ' act' : ''}"><div class="lab click${tsel ? ' sel' : ''}" data-k="tierlab" data-tier="${k}" title="Click to rename or make this the active level">${esc(S.tierNames[k] || 'Level ' + (k + 1))}<small>L${k + 1}</small></div><div class="trk" data-k="tier" data-tier="${k}" style="width:${W}px">`;
+    h += `<div class="row r-tier${k === activeTier && laneFocus === 'tier' ? ' act' : ''}"><div class="lab click${tsel ? ' sel' : ''}" data-k="tierlab" data-tier="${k}" title="Click to rename or make this the active level"><span class="lname">${esc(S.tierNames[k] || 'Level ' + (k + 1))}</span><small>L${k + 1}</small>${moveBtns('tier', k, k < S.tiers.length - 1, k > 0)}</div><div class="trk" data-k="tier" data-tier="${k}" style="width:${W}px">`;
     for (const s of arr){
       const on = sel && sel.kind === 'span' && sel.tier === k && sel.ids.includes(s.id);
-      h += `<div class="sp c-${s.color} tx-${s.texture || 'solid'}${s.aux ? ' aux' : ''}${s.elide ? ' elide' : ''}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="sp" data-tier="${k}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(1, (s.end - s.start) * pps)}px" title="${esc((s.label || 'Unlabeled') + ', ' + fmt(s.start) + ' to ' + fmt(s.end))}"><span class="sp-l">${esc(s.label)}</span></div>`;
+      h += `<div class="sp c-${s.color} tx-${s.texture || 'solid'}${s.align === 'right' ? ' ar' : ''}${s.aux ? ' aux' : ''}${s.elide ? ' elide' : ''}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="sp" data-tier="${k}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(1, (s.end - s.start) * pps)}px" title="${esc((s.label || 'Unlabeled') + ', ' + fmt(s.start) + ' to ' + fmt(s.end))}"><span class="sp-l">${esc(s.label)}</span></div>`;
     }
     for (let i = 0; i < arr.length - 1; i++) h += `<div class="bnd" data-k="bnd" data-tier="${k}" data-i="${i}" style="left:${arr[i].end * pps}px"></div>`;
     h += `</div></div>`;
   }
-  h += `<div class="row r-wave"><div class="lab">Audio</div><div class="trk" data-k="wave" style="width:${W}px"><canvas id="wv"></canvas>${!peaks && waveMsg ? `<span class="wavemsg" style="position:absolute">${esc(waveMsg)}</span>` : ''}</div></div>`;
-  for (const ins of S.instruments){
-    const isel = sel && sel.kind === 'inst' && sel.id === ins.id;
-    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="txkey c-${ins.color}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
+  // The audio lane sits between levels (above) and instruments (below), so its label adds either one.
+  h += `<div class="row r-wave"><div class="lab audiolab"><span class="lname">Audio</span><span class="addbtns edit-only"><button class="addb" data-k="addlevel" type="button" title="Add a level above the audio"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 10V2M2.5 5.5 6 2l3.5 3.5"/></svg>Level</button><button class="addb" data-k="addinst" type="button" title="Add an instrument below the audio"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v8M2.5 6.5 6 10l3.5-3.5"/></svg>Instrument</button></span></div><div class="trk" data-k="wave" style="width:${W}px"><canvas id="wv"></canvas>${!peaks && waveMsg ? `<span class="wavemsg" style="position:absolute">${esc(waveMsg)}</span>` : ''}</div></div>`;
+  S.instruments.forEach((ins, n) => {
+    const isel = sel && sel.kind === 'inst' && sel.id === ins.id, act = laneFocus === 'inst' && activeInst === ins.id;
+    h += `<div class="row r-inst${act ? ' act' : ''}"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}" title="${n < 9 ? 'Press ' + (n + 1) + ' to make this the active lane' : ''}"><span class="txkey c-${ins.color}"></span><span class="lname">${esc(ins.name)}</span>${n < 9 ? `<small>${n + 1}</small>` : ''}${moveBtns('inst', ins.id, n > 0, n < S.instruments.length - 1)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
     for (const s of ins.spans){
-      const on = sel && sel.kind === 'ispan' && sel.id === s.id;
+      const on = sel && sel.kind === 'ispan' && sel.inst === ins.id && selIds().includes(s.id);
       h += `<div class="is c-${ins.color} tx-${s.texture || 'solid'}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
     }
     h += `</div></div>`;
-  }
-  h += `<div class="row r-add edit-only"><div class="lab"><button class="btn sm" data-k="addinst" type="button">+ Instrument</button><button class="btn sm" data-k="addlevel" type="button">+ Level</button></div><div class="trk" style="width:${W}px"></div></div>`;
+  });
   for (const m of S.markers) h += `<div class="stem" style="left:${g + m.time * pps}px${mkTint(m)}"></div>`;
   h += `<div class="ph" id="ph"></div>`;
   keepTouched();
   inner.innerHTML = h;
   inner.style.width = (g + W) + 'px';
   drawWave(); placePH();
+}
+// Small up and down arrows on a lane name, for reordering levels and instruments.
+function moveBtns(what, id, up, down){
+  const b = (dir, on, label, d) => `<button class="mv" data-k="mv" data-what="${what}" data-id="${id}" data-dir="${dir}" type="button" aria-label="${label}" title="${label}"${on ? '' : ' disabled'}><svg viewBox="0 0 10 10" aria-hidden="true"><path d="${d}"/></svg></button>`;
+  return `<span class="mvs edit-only">${b(-1, up, 'Move up', 'M2 6.5 5 3.5l3 3')}${b(1, down, 'Move down', 'M2 3.5 5 6.5l3-3')}</span>`;
 }
 // While fingers are on the screen, the browser sends each finger's touch events to the element it first landed on. A redraw
 // (a tap that selects, or each step of a pinch) replaces those elements, and events sent to an element that has left the
@@ -330,7 +434,7 @@ function renderInspector(){
       const a = Math.min(...sp.map(s => s.start)), b = Math.max(...sp.map(s => s.end));
       el.innerHTML = `<div class="stack">${ihead(`<div class="eyebrow">${esc(S.tierNames[sel.tier])} · ${sp.length} blocks</div><h2>Multiple blocks selected</h2><div class="meta">${timesLine(a, b)}</div>`,
           styleRow('Color for all', swatches(null)) + styleRow('Texture for all', textures(null, sp[0].color)))}
-        <div class="actions"><button class="btn pri" data-act="group" type="button">Group into one block above <kbd>G</kbd></button><button class="btn" data-act="playsel" type="button">Play from start</button></div></div>`;
+        <div class="actions"><button class="btn pri" data-act="group" type="button">Group into one block above <kbd>G</kbd></button><button class="btn" data-act="join" type="button">Join into one block <kbd>J</kbd></button><button class="btn" data-act="playsel" type="button">Play from start</button></div></div>`;
     } else {
       const s = sp[0];
       el.innerHTML = `<div class="stack">
@@ -341,6 +445,7 @@ function renderInspector(){
         <div class="checks">
           <label class="toggle"><input type="checkbox" id="iAux"${s.aux ? ' checked' : ''}> Auxiliary (intro, transition, coda, tag)</label>
           <label class="toggle"><input type="checkbox" id="iElide"${s.elide ? ' checked' : ''}> Elided with the previous block</label>
+          <label class="toggle"><input type="checkbox" id="iAlign"${s.align === 'right' ? ' checked' : ''}> Label at the right end (leading into the next block)</label>
         </div>
         <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="What happens here? Cite what you hear: texture, harmony, cadence, instrumentation.">${esc(s.comment)}</textarea></label>
         <div class="actions">
@@ -355,6 +460,7 @@ function renderInspector(){
       bindField($('#iComment'), v => { s.comment = v; });
       $('#iAux').onchange = e => edit(() => { s.aux = e.target.checked; });
       $('#iElide').onchange = e => edit(() => { s.elide = e.target.checked; });
+      $('#iAlign').onchange = e => edit(() => { if (e.target.checked) s.align = 'right'; else delete s.align; });
     }
   } else if (sel.kind === 'marker'){
     const m = S.markers.find(m => m.id === sel.id);
@@ -375,7 +481,7 @@ function renderInspector(){
     const k = sel.tier;
     el.innerHTML = `<div class="stack"><div><div class="eyebrow">Level ${k + 1} of ${S.tiers.length}</div><h2>${esc(S.tierNames[k])}</h2><div class="meta">${S.tiers[k].length} blocks · active level for splitting</div></div>
       <label class="field"><span>Level name</span><input type="text" id="iLabel" value="${esc(S.tierNames[k])}" autocomplete="off"></label>
-      <div class="actions">${S.tiers.length > 1 ? `<button class="btn" data-act="rmlevel" type="button">Remove this level</button>` : ''}</div></div>`;
+      <div class="actions"><button class="btn" data-act="mvup" type="button"${k < S.tiers.length - 1 ? '' : ' disabled'}>Move up</button><button class="btn" data-act="mvdown" type="button"${k > 0 ? '' : ' disabled'}>Move down</button>${S.tiers.length > 1 ? `<button class="btn" data-act="rmlevel" type="button">Remove this level</button>` : ''}</div></div>`;
     bindField($('#iLabel'), v => { S.tierNames[k] = v; });
   } else if (sel.kind === 'inst'){
     const ins = S.instruments.find(i => i.id === sel.id);
@@ -383,14 +489,15 @@ function renderInspector(){
         styleRow('Color', swatches(ins.color)))}
       <label class="field"><span>Name</span><input type="text" id="iLabel" value="${esc(ins.name)}" autocomplete="off"></label>
       <p class="note" style="margin:0">Select an entry in the lane to give it a texture of its own.</p>
-      <div class="actions"><button class="btn" data-act="enter" type="button">Enters at playhead</button><button class="btn" data-act="exit" type="button">Exits at playhead</button><button class="btn" data-act="rminst" type="button">Delete instrument</button></div></div>`;
+      <div class="actions"><button class="btn" data-act="enter" type="button">Enters at playhead <kbd>E</kbd></button><button class="btn" data-act="exit" type="button">Exits at playhead <kbd>X</kbd></button></div>
+      <div class="actions"><button class="btn sm" data-act="mvup" type="button"${S.instruments[0] === ins ? ' disabled' : ''}>Move up</button><button class="btn sm" data-act="mvdown" type="button"${S.instruments[S.instruments.length - 1] === ins ? ' disabled' : ''}>Move down</button><button class="btn sm" data-act="rminst" type="button">Delete instrument</button></div></div>`;
     bindField($('#iLabel'), v => { ins.name = v; });
   } else if (sel.kind === 'ispan'){
     const ins = S.instruments.find(i => i.id === sel.inst), s = ins.spans.find(s => s.id === sel.id);
     el.innerHTML = `<div class="stack">${ihead(`<div class="eyebrow">Instrument entry</div><h2>${esc(ins.name)}</h2><div class="meta">${timesLine(s.start, s.end)}</div>`,
         styleRow('Texture', textures(s.texture || 'solid', ins.color)))}
       <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="Role in the texture: melody, countermelody, pad, rhythm…">${esc(s.comment || '')}</textarea></label>
-      <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="del" type="button">Delete entry</button></div></div>`;
+      <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="split" type="button">Split at playhead <kbd>S</kbd></button>${selIds().length > 1 ? `<button class="btn" data-act="join" type="button">Join selected <kbd>J</kbd></button>` : ''}<button class="btn" data-act="del" type="button">Delete ${selIds().length > 1 ? selIds().length + ' entries' : 'entry'}</button></div></div>`;
     bindField($('#iComment'), v => { s.comment = v; });
   }
 }
@@ -422,7 +529,7 @@ $('#insp').addEventListener('click', e => {
   if (a === 'texture') return edit(() => {
     const t = b.dataset.t === 'solid' ? null : b.dataset.t, set = o => { if (t) o.texture = t; else delete o.texture; };
     if (sel.kind === 'span') selSpans().forEach(set);
-    else if (sel.kind === 'ispan') set(S.instruments.find(i => i.id === sel.inst).spans.find(s => s.id === sel.id));
+    else if (sel.kind === 'ispan') selEntries().forEach(set);
   });
   if (a === 'vocab') return edit(() => { target().label = b.dataset.w; if (sel.kind === 'span') noteRecent(b.dataset.w); });
   if (a === 'group') return cmdGroup();
@@ -433,16 +540,10 @@ $('#insp').addEventListener('click', e => {
   if (a === 'mkhere') return edit(() => { const m = S.markers.find(m => m.id === sel.id); m.time = snapT(P.t()); S.markers.sort((x, y) => x.time - y.time); });
   if (a === 'rmlevel') return edit(() => { S.tiers.splice(sel.tier, 1); S.tierNames.splice(sel.tier, 1); sel = null; validateSel(); });
   if (a === 'rminst') return edit(() => { S.instruments = S.instruments.filter(i => i.id !== sel.id); sel = null; });
-  if (a === 'enter') return edit(() => {
-    const ins = S.instruments.find(i => i.id === sel.id), t = snapT(P.t());
-    if (ins.spans.some(s => t >= s.start && t < s.end)){ toast(ins.name + ' is already playing here.'); return; }
-    const next = ins.spans.filter(s => s.start > t).sort((a, b) => a.start - b.start)[0];
-    ins.spans.push({id: uid(), start: t, end: next ? next.start : dur(), comment: ''}); ins.spans.sort((a, b) => a.start - b.start);
-  });
-  if (a === 'exit') return edit(() => {
-    const ins = S.instruments.find(i => i.id === sel.id), t = snapT(P.t());
-    const s = ins.spans.find(s => t > s.start && t <= s.end); if (!s){ toast(ins.name + ' is not playing at the playhead.'); return; } s.end = t;
-  });
+  if (a === 'enter') return cmdEnter();
+  if (a === 'exit') return cmdExit();
+  if (a === 'join') return cmdJoinSel();
+  if (a === 'mvup' || a === 'mvdown'){ const d = a === 'mvup' ? -1 : 1; return sel.kind === 'tier' ? moveTier(sel.tier, d) : moveInst(sel.id, d); }
 });
 // Label suggestion groups for blocks: Letters, then what this viewer used lately, then the course's groups.
 function labelGroups(){
@@ -453,24 +554,54 @@ function labelGroups(){
 function target(){ if (sel.kind === 'span') return selSpans()[0]; if (sel.kind === 'marker') return S.markers.find(m => m.id === sel.id); return {}; }
 
 /* ---------- rendering: comments, info ---------- */
+// Comments can be narrowed to some levels, the markers, or some instruments (an empty set shows everything), and drawn
+// with color dots or with each title set in a pill of its color. The style is kept on this device.
+let cmFilter = new Set(), cmStyle = 'dots';
+try { if (localStorage.getItem('listeningmap.cmstyle') === 'pills') cmStyle = 'pills'; } catch(e){}
+const cmShows = key => !cmFilter.size || cmFilter.has(key);
 function renderComments(){
-  const out = [];
+  const out = [], count = {};
+  const tally = key => { count[key] = (count[key] || 0) + 1; return cmShows(key); };
   const walk = (k, a, b, depth) => {
     if (k < 0) return;
     for (const s of S.tiers[k]){
       const mid = (s.start + s.end) / 2; if (mid < a || mid >= b) continue;
-      if (s.comment) out.push({t: s.start, depth, head: s.label || 'Unlabeled', sub: (S.tierNames[k] || 'Level ' + (k + 1)) + ' · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: s.color});
-      walk(k - 1, s.start, s.end, s.comment ? depth + 1 : depth);
+      const shown = s.comment && tally('t' + k);
+      if (shown) out.push({t: s.start, depth, head: s.label || 'Unlabeled', sub: (S.tierNames[k] || 'Level ' + (k + 1)) + ' · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: s.color});
+      walk(k - 1, s.start, s.end, shown ? depth + 1 : depth);
     }
   };
   walk(S.tiers.length - 1, 0, dur() + 1, 0);
-  for (const m of S.markers) if (m.comment) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0], tint: mkTint(m)});
-  for (const i of S.instruments) for (const s of i.spans) if (s.comment) out.push({t: s.start, depth: 0, head: i.name, sub: 'Instrument · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: i.color});
+  for (const m of S.markers) if (m.comment && tally('mk')) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0], tint: mkTint(m)});
+  for (const i of S.instruments) for (const s of i.spans) if (s.comment && tally('i' + i.id)) out.push({t: s.start, depth: 0, head: i.name, sub: 'Instrument · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: i.color});
+  // Filter chips, one per level (top down), the markers, and each instrument, with how many comments each has.
+  const chip = (key, name, n) => `<button class="chip" type="button" data-cmf="${esc(key)}" aria-pressed="${cmFilter.has(key)}">${esc(name)} <span class="n">${n || 0}</span></button>`;
+  let f = `<button class="chip" type="button" data-cmf="" aria-pressed="${!cmFilter.size}">All</button><span class="cmf-sep" aria-hidden="true"></span>`;
+  for (let k = S.tiers.length - 1; k >= 0; k--) f += chip('t' + k, S.tierNames[k] || 'Level ' + (k + 1), count['t' + k]);
+  f += chip('mk', 'Markers', count.mk);
+  if (S.instruments.length) f += `<span class="cmf-sep" aria-hidden="true"></span>` + S.instruments.map(i => chip('i' + i.id, i.name, count['i' + i.id])).join('');
+  $('#cmFilters').innerHTML = f;
+  document.querySelectorAll('[data-cmstyle]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cmstyle === cmStyle));
   const el = $('#comments');
-  el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${o.mk ? `<span class="mk-g"${o.tint ? ` style="${o.tint.slice(1)}"` : ''}>${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`}${esc(o.head)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
+  el.classList.toggle('pills', cmStyle === 'pills');
+  const head = o => cmStyle === 'pills'
+    ? (o.mk ? `<span class="cmpill mkpill"${o.tint ? ` style="${o.tint.slice(1)}"` : ''}><b>${o.mk}</b>${esc(o.head)}</span>` : `<span class="cmpill c-${o.c}">${esc(o.head)}</span>`)
+    : (o.mk ? `<span class="mk-g"${o.tint ? ` style="${o.tint.slice(1)}"` : ''}>${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`) + esc(o.head);
+  el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${head(o)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
+    : cmFilter.size ? `<p class="note">No commentary in what is chosen above. Choose <b>All</b> to see everything.</p>`
     : `<p class="note">No commentary yet. Select any block, marker, or instrument entry and write in its Commentary box. It collects here in formal order, larger sections first.</p>`;
 }
 $('#comments').addEventListener('click', e => { const b = e.target.closest('[data-seek]'); if (b){ P.seek(+b.dataset.seek); scrollTo(+b.dataset.seek); } });
+$('#cmFilters').addEventListener('click', e => {
+  const b = e.target.closest('[data-cmf]'); if (!b) return;
+  const k = b.dataset.cmf;
+  if (!k) cmFilter.clear(); else if (cmFilter.has(k)) cmFilter.delete(k); else cmFilter.add(k);
+  renderComments();
+});
+document.querySelectorAll('[data-cmstyle]').forEach(b => b.onclick = () => {
+  cmStyle = b.dataset.cmstyle; try { localStorage.setItem('listeningmap.cmstyle', cmStyle); } catch(e){}
+  renderComments();
+});
 
 function renderInfo(){
   const el = $('#pieceBody'), g = S.grid, ro = presenting ? ' disabled' : '';
@@ -543,7 +674,7 @@ inner.addEventListener('pointerdown', ev => {
   if (ev.button > 0) return;
   const el = ev.target.closest('[data-k]'); if (!el) return;
   const k = el.dataset.k;
-  if (k === 'addinst' || k === 'addlevel') return;
+  if (k === 'addinst' || k === 'addlevel' || k === 'mv') return;
   if (k === 'ruler' || k === 'wave' || k === 'mktrk'){
     P.seek(tAt(ev)); placePH();
     return drag(ev, e => { P.seek(tAt(e)); placePH(); }, {scrub: true});
@@ -554,16 +685,17 @@ inner.addEventListener('pointerdown', ev => {
       const arr = S.tiers[tier], idx = [...sel.ids.map(i => arr.findIndex(s => s.id === i)), arr.findIndex(s => s.id === id)];
       const a = Math.min(...idx), b = Math.max(...idx); sel.ids = arr.slice(a, b + 1).map(s => s.id);
     } else sel = {kind: 'span', tier, ids: [id]};
-    activeTier = tier; renderAll(); return;
+    focusTier(tier); renderAll(); return;
   }
-  if (k === 'tierlab'){ sel = {kind: 'tier', tier: +el.dataset.tier}; activeTier = +el.dataset.tier; renderAll(); return; }
-  if (k === 'instlab'){ sel = {kind: 'inst', id: el.dataset.id}; renderAll(); return; }
+  if (k === 'tierlab'){ sel = {kind: 'tier', tier: +el.dataset.tier}; focusTier(+el.dataset.tier); renderAll(); return; }
+  if (k === 'instlab'){ sel = {kind: 'inst', id: el.dataset.id}; focusInst(el.dataset.id); renderAll(); return; }
   if (k === 'mk'){
     sel = {kind: 'marker', id: el.dataset.id}; renderAll();
     if (presenting) return;
     const m = S.markers.find(m => m.id === el.dataset.id);
     return drag(ev, e => { m.time = snapT(tAt(e), e); }, {end: () => S.markers.sort((a, b) => a.time - b.time)});
   }
+  if (k === 'is' || k === 'ih') focusInst(el.dataset.inst);
   if (presenting) { if (k === 'is'){ sel = {kind: 'ispan', inst: el.dataset.inst, id: el.dataset.id}; renderAll(); } return; }
   if (k === 'bnd'){
     const arr = S.tiers[+el.dataset.tier], i = +el.dataset.i;
@@ -575,8 +707,13 @@ inner.addEventListener('pointerdown', ev => {
     sel = {kind: 'ispan', inst: ins.id, id: s.id};
     return drag(ev, e => { const t = snapT(tAt(e), e); if (side === 'l') s.start = clamp(t, 0, s.end - 0.1); else s.end = clamp(t, s.start + 0.1, dur()); }, {end: () => ins.spans.sort((a, b) => a.start - b.start)});
   }
-  if (k === 'is'){ sel = {kind: 'ispan', inst: el.dataset.inst, id: el.dataset.id}; renderAll(); return; }
+  if (k === 'is'){
+    if (ev.shiftKey && sel && sel.kind === 'ispan' && sel.inst === el.dataset.inst){ const ids = selIds(); sel.ids = ids.includes(el.dataset.id) ? ids.filter(x => x !== el.dataset.id || x === sel.id) : [...ids, el.dataset.id]; }
+    else sel = {kind: 'ispan', inst: el.dataset.inst, id: el.dataset.id};
+    renderAll(); return;
+  }
   if (k === 'itrk'){
+    focusInst(el.dataset.id);
     const ins = S.instruments.find(i => i.id === el.dataset.id), t0 = snapT(tAt(ev), ev);
     const s = {id: uid(), start: t0, end: t0, comment: ''}; let added = false;
     return drag(ev, e => {
@@ -590,12 +727,14 @@ inner.addEventListener('pointerdown', ev => {
 });
 inner.addEventListener('dblclick', e => { if (e.target.closest('.sp, .mk')) focusLabel(); });
 inner.addEventListener('click', e => {
+  const mv = e.target.closest('[data-k="mv"]');
+  if (mv){ if (mv.dataset.what === 'tier') moveTier(+mv.dataset.id, +mv.dataset.dir); else moveInst(mv.dataset.id, +mv.dataset.dir); return; }
   const b = e.target.closest('[data-k="addinst"],[data-k="addlevel"]'); if (!b) return;
   if (b.dataset.k === 'addinst') edit(() => {
     const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], spans: []};
-    S.instruments.push(ins); sel = {kind: 'inst', id: ins.id};
+    S.instruments.push(ins); sel = {kind: 'inst', id: ins.id}; focusInst(ins.id);
   });
-  else edit(() => { const k = S.tiers.length; S.tiers.push([mk(0, dur())]); S.tierNames[k] = TIER_NAMES[k] || 'Level ' + (k + 1); sel = {kind: 'tier', tier: k}; });
+  else edit(() => { const k = S.tiers.length; S.tiers.push([mk(0, dur())]); S.tierNames[k] = TIER_NAMES[k] || 'Level ' + (k + 1); sel = {kind: 'tier', tier: k}; focusTier(k); });
   if (b.dataset.k === 'addinst') focusLabel();
 });
 
@@ -665,7 +804,21 @@ $('#zIn').onclick = () => zoom(1.5); $('#zOut').onclick = () => zoom(1 / 1.5); $
 document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { P.seek(P.t() + +b.dataset.skip); scrollTo(P.t()); });
 $('#bPlay').onclick = () => P.toggle();
 $('#bSplit').onclick = cmdSplit; $('#bGroup').onclick = cmdGroup; $('#bMark').onclick = cmdMarker;
-$('#bUndo').onclick = doUndo; $('#bRedo').onclick = doRedo;
+$('#bUndo').onclick = doUndo; $('#bRedo').onclick = doRedo; $('#bJoin').onclick = cmdJoinSel;
+// Name the modifier keys the way this computer does.
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+if (IS_MAC){ document.querySelectorAll('.modk').forEach(k => k.textContent = '⌘'); document.querySelectorAll('.altk').forEach(k => k.textContent = '⌥ Option'); }
+$('#bRedo').title = IS_MAC ? 'Redo (⌘⇧Z)' : 'Redo (Ctrl+Y)';
+
+// The big clock: a large time readout for the room, so people can write down when things happen.
+let bigClock = false;
+function setBigClock(on){
+  bigClock = on; $('#bigClock').hidden = !on; $('#bClock').setAttribute('aria-pressed', on);
+  try { localStorage.setItem('listeningmap.bigclock', on ? '1' : ''); } catch(e){}
+}
+$('#bClock').onclick = () => setBigClock(!bigClock);
+$('#bcClose').onclick = () => setBigClock(false);
+try { if (localStorage.getItem('listeningmap.bigclock')) setBigClock(true); } catch(e){}
 $('#snap').onchange = e => edit(() => { S.grid.snap = e.target.checked; if (e.target.checked && !S.grid.on) toast('Snapping uses the measure grid. Turn it on under Piece and grid.'); });
 $('#present').onchange = e => { presenting = e.target.checked; document.body.classList.toggle('present', presenting); renderAll(); renderInfo(); };
 
@@ -676,16 +829,24 @@ function loop(){
   placePH();
   const r = $('#readout'); const pos = mpos(t);
   r.innerHTML = fmt(t) + '<small>' + (pos || '&nbsp;') + '</small>';
+  if (bigClock){ $('#bcTime').textContent = fmt(t); $('#bcPos').textContent = pos; }
   if (playing !== wasPlaying){ $('#playIcon').innerHTML = playing ? '<path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/>' : '<path d="M7 4.5v15l13-7.5z"/>'; $('#bPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play'); wasPlaying = playing; }
   if (playing){ const x = t * pps; if (x > tl.scrollLeft + visW() - 40 || x < tl.scrollLeft) tl.scrollLeft = x - 40; }
   requestAnimationFrame(loop);
 }
 
 /* ---------- keyboard ---------- */
+// In a text box, ⌘Z / Ctrl+Z undoes typing; once there is nothing typed to undo there, it undoes the last edit.
+let focusVal = null;
+document.addEventListener('focusin', e => { focusVal = 'value' in e.target ? e.target.value : null; });
 document.addEventListener('keydown', e => {
   const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select'){ if (e.key === 'Escape') e.target.blur(); return; }
   const mod = e.ctrlKey || e.metaKey;
+  if (tag === 'input' || tag === 'textarea' || tag === 'select'){
+    if (e.key === 'Escape') e.target.blur();
+    else if (mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z') && e.target.value === focusVal && e.target.type !== 'file'){ e.preventDefault(); e.target.blur(); doUndo(); }
+    return;
+  }
   if (e.key === ' '){ e.preventDefault(); return mod ? playFromSel() : P.toggle(); }
   if (mod && (e.key === 'z' || e.key === 'Z')){ e.preventDefault(); return e.shiftKey ? doRedo() : doUndo(); }
   if (mod && (e.key === 'y' || e.key === 'Y')){ e.preventDefault(); return doRedo(); }
@@ -697,6 +858,11 @@ document.addEventListener('keydown', e => {
     case 's': case 'S': cmdSplit(); break;
     case 'g': case 'G': cmdGroup(); break;
     case 'm': case 'M': cmdMarker(); break;
+    case 'j': case 'J': cmdJoinSel(); break;
+    case 'e': case 'E': cmdEnter(); break;
+    case 'x': case 'X': cmdExit(); break;
+    case 'c': case 'C': setBigClock(!bigClock); break;
+    case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': if (!e.shiftKey) pickInst(+e.key); break;
     case 'Delete': e.preventDefault(); cmdDelete(-1); break;
     case 'Backspace': e.preventDefault(); cmdDelete(1); break;
     case '+': case '=': zoom(1.5); break;
@@ -713,7 +879,7 @@ function blankState(src){
     source: src, grid: {on: false, bpm: 120, bpb: 4, offset: 0, snap: false},
     tierNames: ['Phrases'], tiers: [[mk(0, src.duration)]], markers: [], instruments: []};
 }
-function startNew(src){ S = blankState(src); undoStack = []; redoStack = []; sel = null; activeTier = 0; hideBanner(); fit(); renderAll(); renderInfo(); tl.scrollLeft = 0; }
+function startNew(src){ S = blankState(src); undoStack = []; redoStack = []; sel = null; activeTier = 0; laneFocus = 'tier'; activeInst = null; cmFilter.clear(); hideBanner(); fit(); renderAll(); renderInfo(); tl.scrollLeft = 0; }
 async function decodePeaks(arrayBuf){
   try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const b = await ac.decodeAudioData(arrayBuf); ac.close && ac.close(); return {peaks: computePeaks(b), duration: b.duration}; }
   catch(e){ return null; }
@@ -754,7 +920,7 @@ function openAnalysis(data, label){
   if (!data || data.app !== 'listening-map' || !Array.isArray(data.tiers) || !data.source){ toast('That file is not a Listening Map analysis.'); return false; }
   S = data; S.markers ||= []; S.instruments ||= [];
   for (const i of S.instruments){ if (i.texture){ if (i.texture !== 'solid') (i.spans || []).forEach(s => { s.texture ||= i.texture; }); delete i.texture; } } S.tierNames ||= []; S.grid ||= {on: false, bpm: 120, bpb: 4, offset: 0, snap: false}; S.meta ||= {title: '', composer: '', student: '', notes: ''};
-  undoStack = []; redoStack = []; sel = null; activeTier = 0; peaks = null; P.none(); P._t = 0;
+  undoStack = []; redoStack = []; sel = null; activeTier = 0; laneFocus = 'tier'; activeInst = null; peaks = null; cmFilter.clear(); P.none(); P._t = 0;
   if (S.source.type === 'youtube'){ waveMsg = 'No waveform for YouTube sources'; hideBanner(); useYouTube(S.source.youtubeId); }
   else if (S.source.type === 'demo'){ hideBanner(); loadDemoAudio(); }
   else { pendingAudio = S.source.name; waveMsg = 'Audio not loaded'; showBanner(`This analysis was made with <b>${esc(S.source.name)}</b>. Load that file to hear it. <label class="btn sm" for="fAudio">Choose audio file</label>`); }

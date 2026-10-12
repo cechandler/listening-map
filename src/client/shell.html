@@ -54,21 +54,32 @@
       <button class="btn sm" type="button" id="keysClose">Done</button>
     </div>
     <table class="keys">
+      <tr><th colspan="2">Listening</th></tr>
       <tr><td><kbd>Space</kbd></td><td>Play or pause</td></tr>
-      <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block</td></tr>
-      <tr><td><kbd>S</kbd></td><td>Split the active level at the playhead</td></tr>
+      <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block or entry</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
+      <tr><td><kbd>C</kbd></td><td>Show or hide the big clock</td></tr>
+      <tr><th colspan="2">Form and markers</th></tr>
+      <tr><td><kbd>S</kbd></td><td>Split the active lane at the playhead: the level or instrument you selected last</td></tr>
       <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
+      <tr><td><kbd>J</kbd></td><td>Join the selected neighboring blocks (or instrument entries) into one</td></tr>
+      <tr><td><kbd>Shift</kbd> + click</td><td>Select more than one block or entry</td></tr>
       <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
       <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
       <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
-      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
-      <tr><td><kbd>Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
+      <tr><td><kbd class="altk">Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
+      <tr><th colspan="2">Instruments, while listening</th></tr>
+      <tr><td><kbd>1</kbd> to <kbd>9</kbd></td><td>Make that instrument the active lane (numbered beside each name)</td></tr>
+      <tr><td><kbd>E</kbd></td><td>The active instrument enters at the playhead</td></tr>
+      <tr><td><kbd>X</kbd></td><td>The active instrument exits at the playhead</td></tr>
+      <tr><th colspan="2">Editing and view</th></tr>
+      <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Z</kbd></td><td>Undo (also from a text box once its typing is undone)</td></tr>
+      <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Shift</kbd> <kbd>Z</kbd> or <kbd class="modk">Ctrl</kbd> <kbd>Y</kbd></td><td>Redo</td></tr>
       <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></td><td>Zoom in, zoom out, fit</td></tr>
-      <tr><td>Pinch, or <kbd>Ctrl</kbd> + scroll</td><td>Zoom the timeline around the pointer (trackpad, mouse wheel, or touchscreen; <kbd>⌘</kbd> on Mac)</td></tr>
+      <tr><td>Pinch, or <kbd class="modk">Ctrl</kbd> + scroll</td><td>Zoom the timeline around the pointer (trackpad, mouse wheel, or touchscreen)</td></tr>
       <tr><td><kbd>Shift</kbd> + scroll</td><td>Move along the timeline with a mouse wheel</td></tr>
-      <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo and redo (<kbd>⌘</kbd> on Mac)</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
-      <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd>Alt</kbd> to ignore snapping.</td></tr>
+      <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd class="altk">Alt</kbd> to ignore snapping.</td></tr>
     </table>
   </section>
 
@@ -108,9 +119,15 @@
     <div id="pieceBody"></div>
   </details>
 
+  <div class="bigclock" id="bigClock" hidden aria-live="off">
+    <div class="bc-t" id="bcTime">0:00.0</div><div class="bc-m" id="bcPos"></div>
+    <button class="btn sm bc-x" type="button" id="bcClose">Hide <kbd>C</kbd></button>
+  </div>
+
   <section class="transport" aria-label="Transport">
     <button class="play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
     <div class="readout" id="readout">0:00.0<small>&nbsp;</small></div>
+    <button class="btn sm" id="bClock" type="button" aria-pressed="false" title="Show a large clock for the room (C)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>Big clock</button>
     <div class="grp">
       <button class="btn sm" data-skip="-10" type="button">−10s</button>
       <button class="btn sm" data-skip="-1" type="button">−1s</button>
@@ -128,7 +145,8 @@
       <button class="btn sm" id="bSplit" type="button">Split <kbd>S</kbd></button>
       <button class="btn sm" id="bGroup" type="button">Group <kbd>G</kbd></button>
       <button class="btn sm" id="bMark" type="button">Marker <kbd>M</kbd></button>
-      <button class="btn sm" id="bUndo" type="button" aria-label="Undo">Undo</button>
+      <button class="btn sm" id="bJoin" type="button">Join <kbd>J</kbd></button>
+      <button class="btn sm" id="bUndo" type="button" aria-label="Undo">Undo <kbd><span class="modk">Ctrl</span> Z</kbd></button>
       <button class="btn sm" id="bRedo" type="button" aria-label="Redo">Redo</button>
     </div>
     <label class="toggle edit-only" title="Snap edits to the nearest beat when the measure grid is on"><input type="checkbox" id="snap"> Snap to beat</label>
@@ -147,12 +165,15 @@
   </form>
 
   <div class="tl" id="tl"><div class="tl-inner" id="inner"></div></div>
-  <p class="note tlhint">Pinch on a trackpad or touchscreen, or hold <kbd>Ctrl</kbd> (<kbd>⌘</kbd> on Mac) and scroll, to zoom around the pointer. <kbd>Shift</kbd> and scroll moves along the timeline.</p>
+  <p class="note tlhint">Pinch on a trackpad or touchscreen, or hold <kbd class="modk">Ctrl</kbd> and scroll, to zoom around the pointer. <kbd>Shift</kbd> and scroll moves along the timeline.</p>
 
   <div class="lower">
     <section class="card" id="insp" aria-label="Inspector"></section>
     <section class="card" aria-label="Comments">
-      <div class="eyebrow">Commentary</div><h2>Comments</h2>
+      <div class="cmhead"><div><div class="eyebrow">Commentary</div><h2>Comments</h2></div>
+        <div class="seg" role="group" aria-label="How titles look"><button type="button" data-cmstyle="dots">Dots</button><button type="button" data-cmstyle="pills">Pills</button></div>
+      </div>
+      <div class="cmfilters" id="cmFilters" role="group" aria-label="Show comments from"></div>
       <div id="comments"></div>
     </section>
   </div>

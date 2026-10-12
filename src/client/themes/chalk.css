@@ -1,0 +1,133 @@
+/* ===== Chalk =====
+   The classroom board. Light is a whiteboard written in dry-erase marker (black, blue, red, green); dark is a
+   green chalkboard in chalk with pastel chalk colors and a little dust. Panels and keys have hand-drawn, slightly
+   uneven outlines; labels and headings are hand-lettered in Kalam; body text is Nunito and times are Space Mono.
+   Instrument entries look like highlighter strokes. Written as plain CSS; the build scopes it to :root[data-skin="chalk"]. */
+
+:root {
+  --bg: #ECEEE8; --surface: #FBFBF7; --surface-2: #F1F2EC; --line: #C9CCC2; --fg: #20242B; --muted: #5B616B;
+  --accent: #D3263A; --focus: #1D5FC4; --wave: #6F7682; --grid: rgba(32,36,43,.08); --mk: #1D5FC4;
+  --ink: #20242B; --on-accent: #FFFFFF; --dust: transparent;
+  --c-rose: #D3263A; --c-amber: #E08A00; --c-olive: #6E8F12; --c-green: #1E8F4E; --c-teal: #0E8A82;
+  --c-sky: #1A86C7; --c-blue: #1D5FC4; --c-violet: #6A3FC6; --c-plum: #B02D96; --c-slate: #5B616B;
+  --display: "Kalam", "Comic Sans MS", "Bradley Hand", cursive;
+  --ui: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --wob: 14px 5px 12px 6px / 6px 12px 5px 14px; --wob-lg: 22px 8px 26px 9px / 9px 24px 8px 22px;
+  --gut: 128px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1C2A24; --surface: #24352D; --surface-2: #2B3E35; --line: #4A5F55; --fg: #EDEFE6; --muted: #B3BDB3;
+  --accent: #F4D35E; --focus: #8FD3F4; --wave: #A9B8AE; --grid: rgba(237,239,230,.07); --mk: #F7A1B5;
+  --ink: #EDEFE6; --on-accent: #1C2A24; --dust: rgba(255,255,255,.05);
+  --c-rose: #F7A1B5; --c-amber: #F4D35E; --c-olive: #C8E07A; --c-green: #9FE2A8; --c-teal: #86DCCF;
+  --c-sky: #8FD3F4; --c-blue: #A9B8FF; --c-violet: #C9AAF7; --c-plum: #F0A6DE; --c-slate: #B3BDB3;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #1C2A24; --surface: #24352D; --surface-2: #2B3E35; --line: #4A5F55; --fg: #EDEFE6; --muted: #B3BDB3;
+  --accent: #F4D35E; --focus: #8FD3F4; --wave: #A9B8AE; --grid: rgba(237,239,230,.07); --mk: #F7A1B5;
+  --ink: #EDEFE6; --on-accent: #1C2A24; --dust: rgba(255,255,255,.05);
+  --c-rose: #F7A1B5; --c-amber: #F4D35E; --c-olive: #C8E07A; --c-green: #9FE2A8; --c-teal: #86DCCF;
+  --c-sky: #8FD3F4; --c-blue: #A9B8FF; --c-violet: #C9AAF7; --c-plum: #F0A6DE; --c-slate: #B3BDB3;
+  color-scheme: dark; }
+
+/* The board, with a little chalk dust in the dark. */
+body {
+  font-size: 15px;
+  background-image: radial-gradient(ellipse 60% 40% at 15% 10%, var(--dust), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 60%, var(--dust), transparent 70%);
+  background-attachment: fixed;
+}
+.app { gap: 16px; }
+
+/* Hand-lettered headings and labels. */
+.brand h1 { font: 700 28px/1 var(--display); letter-spacing: 0; transform: rotate(-1.5deg); }
+.brand h1::after { content: ""; display: block; height: 3px; margin-top: 2px; border-radius: 3px; background: var(--accent); transform: rotate(1deg); }
+.brand .doc { font-family: var(--display); font-size: 16px; }
+.card h2, .lookhead h2, .pop h2, .ro-label, .lookname { font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: 0; }
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th, .mlabel, .srow > span, .keys th {
+  font-family: var(--display); font-size: 14px; letter-spacing: 0.02em; text-transform: none; font-weight: 700;
+}
+.eyebrow::after { content: ":"; }
+
+/* Panels: hand-drawn outlines. */
+.card, .transport, .tl, .pop, .copybox, header.top, .menu {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--wob-lg); box-shadow: none;
+}
+header.top { padding: 10px 16px; }
+.banner { border: 2px dashed var(--accent); border-radius: var(--wob); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.tl { border-radius: var(--wob); overflow-x: auto; }
+
+/* Keys: marker-drawn boxes that tilt a touch on hover. */
+.btn {
+  font: 700 13.5px/1 var(--ui); background: var(--surface); color: var(--fg); border: 2px solid var(--ink); border-radius: var(--wob);
+  transition: transform 120ms ease;
+}
+.btn:hover:not([disabled]) { border-color: var(--ink); transform: rotate(-1.5deg); }
+.btn:active:not([disabled]) { transform: rotate(0) scale(.97); }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--ink); }
+.btn.sm { border-width: 1.5px; font-size: 12.5px; }
+.btn kbd { background: transparent; color: inherit; border-color: currentColor; }
+.play { width: 50px; height: 50px; background: var(--accent); color: var(--on-accent); border: 2.5px solid var(--ink); border-radius: 48% 52% 50% 50% / 52% 48% 52% 48%; }
+.play:hover { transform: rotate(-6deg); }
+.readout { font: 700 22px/1 var(--mono); border: 2px solid var(--ink); border-radius: var(--wob); padding: 7px 11px; min-width: 120px; }
+.seg { border: 2px solid var(--ink); border-radius: var(--wob); }
+.seg button + button { border-left: 1.5px solid var(--ink); }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+.chip { font: 700 13px var(--ui); border: 1.5px solid var(--ink); border-radius: var(--wob); background: transparent; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.sw { border: 1.5px solid var(--ink); border-radius: 40% 60% 45% 55% / 55% 45% 60% 40%; }
+kbd { font: 700 11px var(--mono); border: 1.5px solid var(--ink); border-bottom-width: 2px; border-radius: 5px 3px 6px 3px; background: transparent; color: var(--fg); }
+.pop input[type=text], .field input[type=text], .field input[type=number], .field textarea, .field select, .copybox textarea {
+  border: 1.5px solid var(--ink); border-radius: var(--wob); background: var(--surface);
+}
+.field textarea { font-family: var(--ui); }
+.sep { width: 2px; background: var(--ink); opacity: .25; border-radius: 2px; }
+
+/* The timeline: lanes ruled in marker, hand-lettered names. */
+.lab { background: var(--surface-2); border-right: 2px solid var(--ink); font: 700 14px var(--display); color: var(--fg); }
+.lab small { font: 700 10px var(--mono); }
+.audiolab .lname { font-size: 13px; }
+.row { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
+.r-tier { height: 50px; }
+.r-tier.act .lab, .r-inst.act .lab { box-shadow: inset 5px 0 0 var(--accent); }
+.tk { border-left-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.tk b { font: 700 13px var(--display); color: var(--muted); }
+.sp {
+  top: 6px; bottom: 7px; border: 2px solid var(--cc); border-radius: var(--wob); color: var(--fg);
+  background: color-mix(in srgb, var(--cc) 20%, var(--surface)); font: 700 15px/1 var(--display);
+}
+.sp.aux { border-style: dashed; background: color-mix(in srgb, var(--cc) 8%, var(--surface)); }
+.sp.sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.mk-g { background: var(--mk); color: var(--surface); border-radius: 50% 45% 55% 50%; font: 700 11px/16px var(--display); }
+.mk-l { font: 700 14px var(--display); }
+.stem { border-left: 2px dotted var(--mk); opacity: .5; }
+/* Highlighter strokes. */
+.is { top: 6px; bottom: 6px; opacity: .85; border-radius: 3px 10px 4px 12px / 8px 4px 10px 3px; background: var(--cc); }
+.ph { width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--accent); }
+.ph::before { border-top-color: var(--accent); }
+.addb { font: 700 12px/1 var(--display); border: 1.5px dashed var(--ink); border-radius: var(--wob); color: var(--fg); }
+.mv { border: 1.5px solid var(--ink); border-radius: 4px 6px 3px 5px; }
+
+/* Comments, tables, menu, clock. */
+.cm { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
+.cm-h { font: 700 16px var(--display); }
+.cmpill { border-radius: var(--wob); }
+.keys td, .subt td { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 20%, transparent); }
+.mi { font: 700 14.5px var(--ui); border-radius: var(--wob); }
+.menu hr { border-top: 1.5px dashed var(--line); }
+.bigclock { background: var(--surface); color: var(--fg); border: 2.5px solid var(--ink); border-radius: var(--wob-lg); box-shadow: none; }
+.bc-t { font-family: var(--mono); font-weight: 700; }
+.bc-m { font-family: var(--display); font-weight: 700; }
+#bClock[aria-pressed=true] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lookcard { border: 2px solid var(--ink); border-radius: var(--wob); }
+.lookcard.on { outline: 3px solid var(--accent); outline-offset: 3px; box-shadow: none; }
+.lookswatch { border: 1.5px solid var(--ink); border-radius: var(--wob); }
+.toast { background: var(--ink); color: var(--bg); border-radius: var(--wob); font-weight: 700; }
+body.present .transport { border-color: var(--accent); }
+
+@media (max-width: 640px) { :root { --gut: 96px; } .brand h1 { font-size: 22px; } }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .play { transition: none; }
+  .btn:hover:not([disabled]), .play:hover, .brand h1 { transform: none; }
+}

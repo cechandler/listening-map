@@ -88,7 +88,7 @@ kbd { border-radius: 3px; background: var(--surface-2); font-family: var(--mono)
 /* The arrangement: dark lanes, mono lane names, clips with a header strip. */
 .tl { background: var(--surface-2); padding: 0; }
 .lab { background: linear-gradient(90deg, var(--surface), var(--surface-2)); border-right: 1px solid color-mix(in srgb, var(--fg) 25%, var(--line)); }
-.r-tier.act .lab { box-shadow: inset 3px 0 0 var(--accent); color: var(--fg); }
+.r-tier.act .lab, .r-inst.act .lab { box-shadow: inset 3px 0 0 var(--accent); color: var(--fg); }
 .r-ruler .trk { background: var(--surface); }
 .tk b { font-family: var(--mono); font-size: 10px; }
 .r-tier { height: 50px; }
@@ -115,3 +115,10 @@ kbd { border-radius: 3px; background: var(--surface-2); font-family: var(--mono)
 .lookcard.on { box-shadow: 0 0 0 2px var(--accent); }
 .lookswatch { border-radius: 3px; }
 .toast { background: var(--lcd-bg); color: var(--lcd-fg); font-family: var(--mono); border-radius: 4px; }
+
+/* The big clock is a wide LCD. */
+.bigclock { background: var(--lcd-bg); color: var(--lcd-fg); border-radius: 4px; box-shadow: inset 0 2px 8px #000, 0 2px 0 var(--bevel-hi); }
+.bc-t { text-shadow: 0 0 18px color-mix(in srgb, var(--lcd-fg) 55%, transparent); }
+.bc-m { color: var(--lcd-dim); opacity: 1; }
+.addb { border-radius: 3px; font: 600 10px/1.2 var(--ui); letter-spacing: 0.04em; text-transform: uppercase; }
+#bClock[aria-pressed=true] { background: var(--lcd-bg); color: var(--lcd-fg); border-color: #000; }

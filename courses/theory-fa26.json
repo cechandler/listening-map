@@ -7,7 +7,7 @@
   "ACCESS": "DOMAIN",
   "SUBMIT": true,
   "THEME": "keycap",
-  "THEMES": ["keycap", "score", "studio", "tapedeck"],
+  "THEMES": ["keycap", "score", "studio", "tapedeck", "chalk"],
   "VOCAB": ["Classical form", "Phrase and theme", "Song form"],
   "MARKER_CHIPS": ["PAC", "IAC", "HC", "DC", "PC", "V:HC", "to V", "to vi", "Climax", "Retransition"],
   "LEVEL_NAMES": ["Phrases", "Sections", "Large form"]

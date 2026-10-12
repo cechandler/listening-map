@@ -10,12 +10,14 @@ Each course gets its own **Google Apps Script web app**, the same way Theory Lab
 
 ## Workflow
 1. Load audio or a YouTube link (**Source**, at the right of the transport).
-2. While listening, press `S` at each boundary to split the active level.
-3. Select neighboring blocks and press `G` to group them on the level above.
-4. Label blocks, mark them auxiliary or elided, add markers (`M`) and instrument lanes. Label suggestions start with **Letters** (A–F, W–Z, a–f, w–z), then **Recent** (labels you used lately, kept on your device), then the course's groups.
+2. While listening, press `S` at each boundary to split the active lane (the level, or instrument, you selected last).
+3. Select neighboring blocks (`Shift` + click) and press `G` to group them on the level above, or `J` to join them into one.
+4. Label blocks, mark them auxiliary or elided (or set the label at the block's right end), add markers (`M`) and instrument lanes. To mark instruments while listening, press `1`–`9` to pick one, then `E` when it enters and `X` when it exits. Label suggestions start with **Letters** (A–F, W–Z, a–f, w–z), then **Recent** (labels you used lately, kept on your device), then the course's groups.
 5. **Submit to your instructor** (in a course; the dialog shows what will be sent), or export the analysis (**Settings → Export analysis**) and hand in the `.json` file.
 
 **Settings** (top right) holds Import analysis, Export analysis, the theme, and the keyboard shortcuts. **Piece and grid** (title, composer, analyst, notes, and the measure grid) sits above the transport and folds away; the page remembers whether it is folded.
+
+Add a level or an instrument from the **Audio** lane's name (levels go above it, instruments below). Reorder levels and instruments with the arrows on their lane names or **Move up**/**Move down** in the inspector. Undo is `⌘Z` (`Ctrl+Z` on Windows), and **Big clock** (`C`) shows a large time readout for the room. **Comments** can be narrowed to some levels, the markers, or some instruments, and shown with color dots or with each title in a colored pill.
 
 Color and texture sit beside the title of the inspector. Blocks take a color and a texture; each instrument takes a color and starts solid, and each of its entries can take its own texture (solid, stripes, dots, dashes, circles, lines, crosshatch, grid). Markers take their own color, or keep the theme's.
 
@@ -35,7 +37,8 @@ Students choose a theme under **Settings → Theme** (kept on their device) and 
 | `studio` | The original: quiet and clean. |
 | `keycap` | Theory Lab's keycap design: warm paper, ink outlines, hard shadows, and red keys that press down. |
 | `tapedeck` | Studio hardware for music technology: an LCD readout and blocks drawn as DAW clips. |
-| `score` | Engraved paper for theory: serif headings, hairline rules, and blocks drawn as analysis brackets. |
+| `score` | Engraved paper for theory: serif headings, ruled lanes, and blocks drawn as analysis brackets. |
+| `chalk` | The classroom board: hand-lettered labels and marker strokes; a whiteboard in light, a chalkboard in dark. |
 
 Adding a theme: see [docs/THEMES.md](docs/THEMES.md).
 
