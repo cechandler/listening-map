@@ -165,6 +165,104 @@ await step("markers take their own color", async () => {
   await page.keyboard.press("Escape");
 });
 
+const seekTo = (pg, t) => pg.evaluate(t => { P.seek(t); }, t);
+await page.waitForFunction(() => P.kind === "audio" && P.audio.readyState >= 1, null, { timeout: 20000 });
+
+await step("undo with Ctrl/⌘ + Z, also from an untouched text box", async () => {
+  const before = await page.evaluate(() => S.tiers[0][1].label);
+  await page.locator('.sp[data-tier="0"]').nth(1).click();
+  await page.click('#insp .chip[data-w="D"]');
+  assert.equal(await page.evaluate(() => S.tiers[0][1].label), "D");
+  await page.click("#iLabel");
+  await page.keyboard.press("Control+z");
+  assert.equal(await page.evaluate(() => S.tiers[0][1].label), before);
+  await page.keyboard.press("Escape");
+});
+
+await step("J joins neighboring blocks selected with Shift + click", async () => {
+  const n = await page.evaluate(() => S.tiers[0].length);
+  await page.locator('.sp[data-tier="0"]').nth(1).click();
+  await page.locator('.sp[data-tier="0"]').nth(2).click({ modifiers: ["Shift"] });
+  await page.keyboard.press("j");
+  assert.equal(await page.evaluate(() => S.tiers[0].length), n - 1);
+  await page.keyboard.press("Control+z");
+  assert.equal(await page.evaluate(() => S.tiers[0].length), n);
+  await page.keyboard.press("Escape");
+});
+
+await step("number keys pick an instrument; E and X mark entries at the playhead; S splits it", async () => {
+  await page.keyboard.press("4"); // Lead: plays 24–40 and 56–72
+  assert.equal(await page.evaluate(() => laneFocus === "inst" && S.instruments.find(i => i.id === activeInst).name), "Lead");
+  const lead = () => page.evaluate(() => S.instruments.find(i => i.name === "Lead").spans.map(s => [s.start, s.end]));
+  await seekTo(page, 44); await page.keyboard.press("e");
+  assert.deepEqual((await lead())[1], [44, 56]);
+  await seekTo(page, 50); await page.keyboard.press("x");
+  assert.deepEqual((await lead())[1], [44, 50]);
+  await page.keyboard.press("4");
+  await seekTo(page, 30); await page.keyboard.press("s");
+  assert.deepEqual((await lead()).slice(0, 2), [[24, 30], [30, 40]], "S splits the instrument entry, not a level");
+  for (let i = 0; i < 3; i++) await page.keyboard.press("Control+z");
+  assert.equal((await lead()).length, 2);
+  await page.locator('.sp[data-tier="0"]').first().click();
+  await seekTo(page, 4); await page.keyboard.press("s");
+  assert.equal(await page.evaluate(() => S.tiers[0][0].end), 4, "after a block is selected, S splits its level again");
+  await page.keyboard.press("Control+z");
+  await page.keyboard.press("Escape");
+});
+
+await step("levels and instruments reorder; Audio's label adds a level or an instrument", async () => {
+  const names = () => page.evaluate(() => S.instruments.map(i => i.name).join(","));
+  const first = await names();
+  await page.click('.lab[data-k="instlab"]');
+  await page.click('.lab[data-k="instlab"].sel [data-k="mv"][data-dir="1"]');
+  assert.equal(await names(), first.split(",").slice(1, 2).concat(first.split(",")[0], first.split(",").slice(2)).join(","));
+  await page.keyboard.press("Control+z");
+  const tiers = await page.evaluate(() => S.tierNames.join(","));
+  await page.click('.lab[data-k="tierlab"][data-tier="0"]');
+  await page.click('#insp [data-act="mvup"]');
+  assert.equal(await page.evaluate(() => S.tierNames.join(",")), tiers.split(",").reverse().join(","));
+  await page.keyboard.press("Control+z");
+  assert.equal(await page.locator(".r-add").count(), 0);
+  const [nt, ni] = await page.evaluate(() => [S.tiers.length, S.instruments.length]);
+  await page.click('.audiolab [data-k="addlevel"]');
+  await page.keyboard.press("Escape");
+  await page.click('.audiolab [data-k="addinst"]');
+  await page.keyboard.press("Escape");
+  assert.deepEqual(await page.evaluate(() => [S.tiers.length, S.instruments.length]), [nt + 1, ni + 1]);
+  await page.keyboard.press("Control+z"); await page.keyboard.press("Control+z");
+  await page.keyboard.press("Escape");
+});
+
+await step("a block's label can sit at its right end", async () => {
+  await page.locator('.sp[data-tier="1"]').first().click();
+  await page.check("#iAlign");
+  assert.equal(await page.locator('.sp[data-tier="1"].ar').count(), 1);
+  await page.keyboard.press("Control+z");
+  await page.keyboard.press("Escape");
+});
+
+await step("comments filter by level, markers, and instrument, as dots or pills", async () => {
+  await page.click('#cmFilters [data-cmf="mk"]');
+  const heads = await page.locator("#comments .cm .meta").allTextContents();
+  assert.ok(heads.length > 0 && heads.every(h => /^Marker/.test(h)), "only marker comments");
+  await page.click('#cmFilters [data-cmf="t1"]');
+  assert.ok((await page.locator("#comments .cm .meta").allTextContents()).some(h => /^Sections/.test(h)));
+  await page.click('#cmFilters [data-cmf=""]');
+  await page.click('[data-cmstyle="pills"]');
+  assert.ok(await page.locator("#comments .cmpill").count() > 3);
+  await page.click('[data-cmstyle="dots"]');
+  assert.equal(await page.locator("#comments .cmpill").count(), 0);
+});
+
+await step("C shows a big clock for the room", async () => {
+  await page.keyboard.press("c");
+  assert.ok(await page.isVisible("#bigClock"));
+  await seekTo(page, 65.4); await frame(page);
+  assert.equal(await page.textContent("#bcTime"), "1:05.4");
+  await page.keyboard.press("c");
+  assert.equal(await page.isVisible("#bigClock"), false);
+});
+
 await step("every theme applies, in light and dark", async () => {
   const looks = await page.evaluate(() => lookChoices().map(l => l.id));
   await page.click("#bMenu");

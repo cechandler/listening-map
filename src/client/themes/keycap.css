@@ -133,8 +133,8 @@ kbd { font: 500 11px var(--mono); background: var(--surface); border: 1px solid 
 .row { border-bottom: 1px solid color-mix(in srgb, var(--fg) 16%, transparent); }
 .lab { background: var(--surface-2); border-right: 2px solid var(--edge); font: 500 10.5px var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
 .lab small { font-size: 9.5px; }
-.r-tier.act .lab { color: var(--fg); box-shadow: inset 5px 0 0 var(--accent); }
-.r-tier.act .lab.sel { box-shadow: inset 5px 0 0 var(--accent), inset 0 0 0 3px var(--focus); }
+.r-tier.act .lab, .r-inst.act .lab { color: var(--fg); box-shadow: inset 5px 0 0 var(--accent); }
+.r-tier.act .lab.sel, .r-inst.act .lab.sel { box-shadow: inset 5px 0 0 var(--accent), inset 0 0 0 3px var(--focus); }
 .lab.sel { box-shadow: inset 0 0 0 3px var(--focus); }
 .r-tier { height: 52px; }
 .tk { border-left-color: color-mix(in srgb, var(--fg) 22%, transparent); }
@@ -189,3 +189,10 @@ body.present .transport { border-color: var(--accent); }
   .btn, .chip, .play, .lookcard { transition: none; }
   .btn:hover:not([disabled]), .chip:hover, .lookcard:hover { transform: none; }
 }
+
+/* Lane controls, the big clock */
+.addb { border: 1.5px dashed var(--edge); border-radius: 8px; font-weight: 600; color: var(--fg); }
+.addb:hover { border-style: solid; background: var(--surface); }
+.mv { border: 1.5px solid var(--edge); border-radius: 5px; }
+.bigclock { border: var(--border); border-radius: var(--r-bento); box-shadow: var(--shadow); }
+#bClock[aria-pressed=true] { background-color: var(--fg); color: var(--bg); }
