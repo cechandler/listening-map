@@ -41,7 +41,7 @@ textarea:focus-visible, .lookcard:focus-visible { outline: 3px solid var(--fg); 
 
 /* Headings and labels */
 .card h2, .lookhead h2, .pop h2, .ro-label { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.2rem; }
-.eyebrow, .grp .lbl, .presentpill, .brand .course, .subt th, .field > span { font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; font-size: 0.7rem; }
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .subt th, .field > span, .mlabel, .srow > span { font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; font-size: 0.7rem; }
 .field > span { color: var(--muted); }
 .meta { font-family: var(--mono); }
 
@@ -125,6 +125,8 @@ header.top { background: var(--surface); border: var(--border); border-radius: v
 .chip.sym { font-family: var(--mono); }
 .sw { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--edge); box-shadow: 0 2px 0 var(--edge); }
 .sw.on { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--fg); }
+.istyle .sw { width: 20px; height: 20px; border-radius: 6px; box-shadow: 0 1.5px 0 var(--edge); }
+.istyle .sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
 kbd { font: 500 11px var(--mono); background: var(--surface); border: 1px solid var(--edge); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; color: var(--fg); }
 
 /* The timeline: an ink-edged board. Lane labels in mono on a tinted gutter. */
@@ -147,10 +149,10 @@ kbd { font: 500 11px var(--mono); background: var(--surface); border: 1px solid 
 .sp.sel { box-shadow: inset 0 0 0 2px var(--surface), inset 0 0 0 4px var(--fg), 0 1.5px 0 var(--edge); }
 .sp.hc::after { background: var(--fg); width: 7px; height: 7px; right: 6px; top: 6px; }
 .bnd:hover::after { background: var(--accent); width: 3px; left: 4.5px; }
-.mk-g { background: var(--fg); color: var(--bg); border-radius: 6px; width: 18px; height: 18px; line-height: 18px; font: 500 10.5px/18px var(--mono); box-shadow: 0 2px 0 color-mix(in srgb, var(--fg) 40%, transparent); }
+.mk-g { background: var(--mk); color: var(--bg); border-radius: 6px; width: 18px; height: 18px; line-height: 18px; font: 500 10.5px/18px var(--mono); box-shadow: 0 2px 0 color-mix(in srgb, var(--fg) 40%, transparent); }
 .mk-l { font-weight: 700; }
-.mk.sel .mk-g { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
-.stem { border-left: 1.5px dashed var(--fg); opacity: .35; }
+.mk.sel .mk-g { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
+.stem { border-left: 1.5px dashed var(--mk); opacity: .35; }
 .is { border: 1.5px solid var(--edge); border-radius: 7px; opacity: 1; background: color-mix(in srgb, var(--cc) 70%, var(--surface)); }
 .txkey, .txsw { border: 1.5px solid var(--edge); }
 .is.sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }

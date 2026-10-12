@@ -17,12 +17,16 @@
   <header class="top">
     <div class="brand"><h1>Listening Map</h1><span class="course" id="courseName"></span><span class="doc" id="docTitle"></span><span class="presentpill">Presentation</span></div>
     <div class="tools">
-      <button class="btn pri" id="bSubmit" type="button" hidden>Submit</button>
-      <button class="btn" id="bSubs" type="button" hidden>Submissions</button>
       <label class="toggle"><input type="checkbox" id="present"> Present</label>
       <div class="menuwrap">
         <button class="btn" id="bMenu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu"><svg class="burger" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M2 8h12M2 12.5h12"/></svg>Settings</button>
         <div class="menu" id="menu" role="menu" hidden>
+          <div class="mgroup" id="courseItems" hidden>
+            <div class="mlabel" id="courseLabel">Course</div>
+            <button class="mi" id="bSubmit" type="button" role="menuitem" hidden>Submit to your instructor…</button>
+            <button class="mi" id="bSubs" type="button" role="menuitem" hidden>Student submissions</button>
+            <hr>
+          </div>
           <button class="mi" id="bImport" type="button" role="menuitem">Import analysis…</button>
           <input type="file" id="fOpen" accept=".json,application/json" hidden>
           <button class="mi" id="bExport" type="button" role="menuitem">Export analysis</button>
@@ -69,23 +73,29 @@
   </section>
 
   <form class="pop submit" id="submitPop" hidden>
-    <div class="stack" style="flex:1 1 100%">
-      <div><div class="eyebrow">Submit to <span id="subCourse"></span></div><h2>Hand in this analysis</h2></div>
+    <div class="lookhead"><div><div class="eyebrow">Submit to <span id="subCourse"></span></div><h2 id="subHead">Hand in this analysis</h2></div>
+      <button class="btn sm" type="button" id="subCancel">Cancel</button>
+    </div>
+    <div class="subform" id="subForm">
       <div class="row2">
         <label class="field" id="subAsgWrap"><span>Assignment</span><select id="subAsg"></select></label>
-        <label class="field"><span>Your name (as it appears in the analysis)</span><input type="text" id="subName" autocomplete="name"></label>
+        <label class="field"><span>Your name (saved in the analysis)</span><input type="text" id="subName" autocomplete="name"></label>
       </div>
+      <div class="subwhat" id="subWhat"></div>
       <p class="note" id="subNote"></p>
-      <div class="actions"><button class="btn pri" type="submit" id="subGo">Submit</button><button class="btn" type="button" id="subCancel">Cancel</button></div>
+      <div class="actions"><button class="btn pri" type="submit" id="subGo">Submit</button></div>
     </div>
+    <div class="subdone" id="subDone" hidden></div>
+    <div class="note" id="subMine"></div>
   </form>
 
-  <section class="card subs" id="subsPanel" hidden aria-label="Submissions">
-    <div class="lookhead"><div><div class="eyebrow">Instructor</div><h2>Submissions</h2></div>
+  <section class="card subs" id="subsPanel" hidden aria-label="Student submissions">
+    <div class="lookhead"><div><div class="eyebrow">Instructor</div><h2>Student submissions</h2></div>
       <label class="field" style="min-width:200px"><span>Assignment</span><select id="subsFilter"></select></label>
       <button class="btn sm" type="button" id="subsRefresh">Refresh</button>
       <button class="btn sm" type="button" id="subsClose">Close</button>
     </div>
+    <p class="note" style="margin:0">Newest first. <b>Open</b> puts a student's analysis on the timeline in place of what is there now, so export your own work first. Audio files are not submitted: load your copy of the recording to listen along.</p>
     <div id="subsList"></div>
   </section>
 

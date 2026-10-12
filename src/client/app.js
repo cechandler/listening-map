@@ -6,7 +6,7 @@ const MK_KINDS = {cadence:['C','Cadence'],modulation:['M','Modulation'],climax:[
 // Label suggestions. A course file picks groups by name ("VOCAB": ["Song form", "Production"]) or adds its own
 // ({"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}). Letters always come first unless the course places them.
 const VOCAB_LIBRARY = [
-  ['Letters',['A','B','C','D','E','F','a','b','c','d','e','f']],
+  ['Letters',['A','B','C','D','E','F','W','X','Y','Z','a','b','c','d','e','f','w','x','y','z']],
   ['Song form',['Intro','Verse','Pre-chorus','Chorus','Post-chorus','Bridge','Break','Solo','Outro','Refrain']],
   ['Classical form',['Exposition','Transition','Development','Retransition','Recapitulation','Coda','Theme','Variation']],
   ['Phrase and theme',['Presentation','Continuation','Antecedent','Consequent','Basic idea','Cadential','Sentence','Period']],
@@ -16,12 +16,18 @@ const VOCAB = (groups => groups.some(g => g[0] === 'Letters') ? groups : [VOCAB_
   ? CFG.VOCAB.map(v => typeof v === 'string' ? VOCAB_LIBRARY.find(g => g[0] === v) : v && Array.isArray(v.words) ? [String(v.name || ''), v.words.map(String)] : null).filter(Boolean)
   : VOCAB_LIBRARY.slice(1, 4));
 const MARKER_CHIPS = Array.isArray(CFG.MARKER_CHIPS) && CFG.MARKER_CHIPS.length ? CFG.MARKER_CHIPS.map(String) : ['PAC','IAC','HC','DC','PC','V:HC','to V','to vi','Climax','Retransition'];
-const SYMBOLS = ['⁒','➚','➙','➘','′','″'];
-// Fill patterns for instrument lanes, so lanes can be told apart by more than color.
+// Fill patterns for blocks and instrument entries, so they can be told apart by more than color.
 const TEXTURES = ['solid','stripes','dots','dashes','circles','lines','crosshatch','grid'];
 const EPS = 1e-6;
 // True when the page is served by a course's Apps Script web app (google.script.run is there).
 const IN_COURSE_FRAME = !!(window.google && google.script && google.script.run);
+// Labels this viewer used lately, offered under Recent. Kept on this device only.
+const RECENT_KEY = 'listeningmap.recent';
+function recentLabels(){ try { const r = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(r) ? r.filter(x => typeof x === 'string').slice(0, 12) : []; } catch(e){ return []; } }
+function noteRecent(label){
+  label = String(label || '').trim(); if (!label) return;
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify([label, ...recentLabels().filter(x => x !== label)].slice(0, 12))); } catch(e){}
+}
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -254,7 +260,7 @@ function renderTimeline(){
   h += `<div class="row r-mk"><div class="lab">Markers</div><div class="trk" data-k="mktrk" style="width:${W}px">`;
   for (const m of S.markers){
     const on = sel && sel.kind === 'marker' && sel.id === m.id;
-    h += `<div class="mk${on ? ' sel' : ''}" data-k="mk" data-id="${m.id}" style="left:${m.time * pps}px" title="${esc(MK_KINDS[m.kind][1] + ' at ' + fmt(m.time))}"><span class="mk-g">${MK_KINDS[m.kind][0]}</span><span class="mk-l">${esc(m.label)}</span></div>`;
+    h += `<div class="mk${on ? ' sel' : ''}" data-k="mk" data-id="${m.id}" style="left:${m.time * pps}px${mkTint(m)}" title="${esc(MK_KINDS[m.kind][1] + ' at ' + fmt(m.time))}"><span class="mk-g">${MK_KINDS[m.kind][0]}</span><span class="mk-l">${esc(m.label)}</span></div>`;
   }
   h += `</div></div>`;
   for (let k = S.tiers.length - 1; k >= 0; k--){
@@ -262,7 +268,7 @@ function renderTimeline(){
     h += `<div class="row r-tier${k === activeTier ? ' act' : ''}"><div class="lab click${tsel ? ' sel' : ''}" data-k="tierlab" data-tier="${k}" title="Click to rename or make this the active level">${esc(S.tierNames[k] || 'Level ' + (k + 1))}<small>L${k + 1}</small></div><div class="trk" data-k="tier" data-tier="${k}" style="width:${W}px">`;
     for (const s of arr){
       const on = sel && sel.kind === 'span' && sel.tier === k && sel.ids.includes(s.id);
-      h += `<div class="sp c-${s.color}${s.aux ? ' aux' : ''}${s.elide ? ' elide' : ''}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="sp" data-tier="${k}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(1, (s.end - s.start) * pps)}px" title="${esc((s.label || 'Unlabeled') + ', ' + fmt(s.start) + ' to ' + fmt(s.end))}"><span class="sp-l">${esc(s.label)}</span></div>`;
+      h += `<div class="sp c-${s.color} tx-${s.texture || 'solid'}${s.aux ? ' aux' : ''}${s.elide ? ' elide' : ''}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="sp" data-tier="${k}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(1, (s.end - s.start) * pps)}px" title="${esc((s.label || 'Unlabeled') + ', ' + fmt(s.start) + ' to ' + fmt(s.end))}"><span class="sp-l">${esc(s.label)}</span></div>`;
     }
     for (let i = 0; i < arr.length - 1; i++) h += `<div class="bnd" data-k="bnd" data-tier="${k}" data-i="${i}" style="left:${arr[i].end * pps}px"></div>`;
     h += `</div></div>`;
@@ -270,15 +276,15 @@ function renderTimeline(){
   h += `<div class="row r-wave"><div class="lab">Audio</div><div class="trk" data-k="wave" style="width:${W}px"><canvas id="wv"></canvas>${!peaks && waveMsg ? `<span class="wavemsg" style="position:absolute">${esc(waveMsg)}</span>` : ''}</div></div>`;
   for (const ins of S.instruments){
     const isel = sel && sel.kind === 'inst' && sel.id === ins.id;
-    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="txkey c-${ins.color} tx-${ins.texture || 'solid'}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
+    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="txkey c-${ins.color}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
     for (const s of ins.spans){
       const on = sel && sel.kind === 'ispan' && sel.id === s.id;
-      h += `<div class="is c-${ins.color} tx-${ins.texture || 'solid'}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
+      h += `<div class="is c-${ins.color} tx-${s.texture || 'solid'}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
     }
     h += `</div></div>`;
   }
   h += `<div class="row r-add edit-only"><div class="lab"><button class="btn sm" data-k="addinst" type="button">+ Instrument</button><button class="btn sm" data-k="addlevel" type="button">+ Level</button></div><div class="trk" style="width:${W}px"></div></div>`;
-  for (const m of S.markers) h += `<div class="stem" style="left:${g + m.time * pps}px"></div>`;
+  for (const m of S.markers) h += `<div class="stem" style="left:${g + m.time * pps}px${mkTint(m)}"></div>`;
   h += `<div class="ph" id="ph"></div>`;
   keepTouched();
   inner.innerHTML = h;
@@ -302,8 +308,13 @@ const countTouches = e => { touchesDown = e.touches.length; if (!touchesDown){ c
 function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
 
 /* ---------- rendering: inspector ---------- */
+// A marker with its own color sets --mk, which every theme draws marker glyphs and stems with.
+const mkTint = m => m.color && COLORS.includes(m.color) ? `;--mk:var(--c-${m.color})` : '';
 function textures(cur, color){ return `<div class="swatches">${TEXTURES.map(t => `<button class="sw txsw c-${color} tx-${t}${t === cur ? ' on' : ''}" data-act="texture" data-t="${t}" type="button" aria-label="${t}" title="${t[0].toUpperCase() + t.slice(1)}"></button>`).join('')}</div>`; }
-function swatches(cur){ return `<div class="swatches">${COLORS.map(c => `<button class="sw c-${c}${c === cur ? ' on' : ''}" data-act="color" data-c="${c}" type="button" aria-label="${c}"></button>`).join('')}</div>`; }
+function swatches(cur, withDefault){ return `<div class="swatches">${withDefault ? `<button class="sw sw-ink${cur ? '' : ' on'}" data-act="color" data-c="" type="button" aria-label="Default" title="Default"></button>` : ''}${COLORS.map(c => `<button class="sw c-${c}${c === cur ? ' on' : ''}" data-act="color" data-c="${c}" type="button" aria-label="${c}" title="${c[0].toUpperCase() + c.slice(1)}"></button>`).join('')}</div>`; }
+// The title of an inspector panel, with its color and texture choices beside it.
+function ihead(title, style){ return `<div class="ihead"><div class="ititle">${title}</div>${style ? `<div class="istyle">${style}</div>` : ''}</div>`; }
+const styleRow = (name, html) => `<div class="srow"><span>${name}</span>${html}</div>`;
 function timesLine(a, b){ const bars = S.grid.on ? ` · ${mbar(a)} to ${mbar(b)}` : ''; return `${fmt(a)} to ${fmt(b)} · ${(b - a).toFixed(1)}s${bars}`; }
 function renderInspector(){
   const el = $('#insp');
@@ -317,17 +328,16 @@ function renderInspector(){
     const sp = selSpans();
     if (sp.length > 1){
       const a = Math.min(...sp.map(s => s.start)), b = Math.max(...sp.map(s => s.end));
-      el.innerHTML = `<div class="stack"><div><div class="eyebrow">${esc(S.tierNames[sel.tier])} · ${sp.length} blocks</div><h2>Multiple blocks selected</h2><div class="meta">${timesLine(a, b)}</div></div>
-        <div class="field"><span>Color for all</span>${swatches(null)}</div>
+      el.innerHTML = `<div class="stack">${ihead(`<div class="eyebrow">${esc(S.tierNames[sel.tier])} · ${sp.length} blocks</div><h2>Multiple blocks selected</h2><div class="meta">${timesLine(a, b)}</div>`,
+          styleRow('Color for all', swatches(null)) + styleRow('Texture for all', textures(null, sp[0].color)))}
         <div class="actions"><button class="btn pri" data-act="group" type="button">Group into one block above <kbd>G</kbd></button><button class="btn" data-act="playsel" type="button">Play from start</button></div></div>`;
     } else {
       const s = sp[0];
       el.innerHTML = `<div class="stack">
-        <div><div class="eyebrow">${esc(S.tierNames[sel.tier] || 'Level ' + (sel.tier + 1))} · Level ${sel.tier + 1}</div><h2>${esc(s.label) || 'Unlabeled block'}</h2><div class="meta">${timesLine(s.start, s.end)}</div></div>
+        ${ihead(`<div class="eyebrow">${esc(S.tierNames[sel.tier] || 'Level ' + (sel.tier + 1))} · Level ${sel.tier + 1}</div><h2>${esc(s.label) || 'Unlabeled block'}</h2><div class="meta">${timesLine(s.start, s.end)}</div>`,
+          styleRow('Color', swatches(s.color)) + styleRow('Texture', textures(s.texture || 'solid', s.color)))}
         <label class="field"><span>Label</span><input type="text" id="iLabel" value="${esc(s.label)}" placeholder="e.g. Verse 1, A, Presentation" autocomplete="off"></label>
-        <div class="chipgroup">${VOCAB.map(([name, words]) => `<div class="eyebrow" style="margin-top:2px">${name}</div><div class="chips">${words.map(w => `<button class="chip" data-act="vocab" data-w="${esc(w)}" type="button">${esc(w)}</button>`).join('')}</div>`).join('')}
-          <div class="eyebrow" style="margin-top:2px">Symbols (added to the label)</div><div class="chips">${SYMBOLS.map(w => `<button class="chip sym" data-act="sym" data-w="${w}" type="button">${w}</button>`).join('')}</div></div>
-        <div class="field"><span>Color</span>${swatches(s.color)}</div>
+        <div class="chipgroup">${labelGroups().map(([name, words]) => `<div class="eyebrow" style="margin-top:2px">${esc(name)}</div><div class="chips">${words.map(w => `<button class="chip" data-act="vocab" data-w="${esc(w)}" type="button">${esc(w)}</button>`).join('')}</div>`).join('')}</div>
         <div class="checks">
           <label class="toggle"><input type="checkbox" id="iAux"${s.aux ? ' checked' : ''}> Auxiliary (intro, transition, coda, tag)</label>
           <label class="toggle"><input type="checkbox" id="iElide"${s.elide ? ' checked' : ''}> Elided with the previous block</label>
@@ -341,6 +351,7 @@ function renderInspector(){
           <button class="btn" data-act="joinr" type="button">Join right</button>
         </div></div>`;
       bindField($('#iLabel'), v => { s.label = v; });
+      $('#iLabel').addEventListener('change', () => noteRecent(s.label));
       bindField($('#iComment'), v => { s.comment = v; });
       $('#iAux').onchange = e => edit(() => { s.aux = e.target.checked; });
       $('#iElide').onchange = e => edit(() => { s.elide = e.target.checked; });
@@ -348,7 +359,8 @@ function renderInspector(){
   } else if (sel.kind === 'marker'){
     const m = S.markers.find(m => m.id === sel.id);
     el.innerHTML = `<div class="stack">
-      <div><div class="eyebrow">Marker · ${MK_KINDS[m.kind][1]}</div><h2>${esc(m.label) || 'Unlabeled marker'}</h2><div class="meta">${fmt(m.time)}${S.grid.on ? ' · ' + mpos(m.time) : ''}</div></div>
+      ${ihead(`<div class="eyebrow">Marker · ${MK_KINDS[m.kind][1]}</div><h2>${esc(m.label) || 'Unlabeled marker'}</h2><div class="meta">${fmt(m.time)}${S.grid.on ? ' · ' + mpos(m.time) : ''}</div>`,
+        styleRow('Color', swatches(m.color, true)))}
       <div class="row2">
         <label class="field"><span>Label</span><input type="text" id="iLabel" value="${esc(m.label)}" placeholder="e.g. PAC, to V, climax" autocomplete="off"></label>
         <label class="field"><span>Type</span><select id="iKind">${Object.entries(MK_KINDS).map(([k, v]) => `<option value="${k}"${k === m.kind ? ' selected' : ''}>${v[1]}</option>`).join('')}</select></label>
@@ -367,15 +379,16 @@ function renderInspector(){
     bindField($('#iLabel'), v => { S.tierNames[k] = v; });
   } else if (sel.kind === 'inst'){
     const ins = S.instruments.find(i => i.id === sel.id);
-    el.innerHTML = `<div class="stack"><div><div class="eyebrow">Instrument</div><h2>${esc(ins.name)}</h2><div class="meta">${ins.spans.length} ${ins.spans.length === 1 ? 'entry' : 'entries'} · drag across its lane to add more</div></div>
+    el.innerHTML = `<div class="stack">${ihead(`<div class="eyebrow">Instrument</div><h2>${esc(ins.name)}</h2><div class="meta">${ins.spans.length} ${ins.spans.length === 1 ? 'entry' : 'entries'} · drag across its lane to add more</div>`,
+        styleRow('Color', swatches(ins.color)))}
       <label class="field"><span>Name</span><input type="text" id="iLabel" value="${esc(ins.name)}" autocomplete="off"></label>
-      <div class="field"><span>Color</span>${swatches(ins.color)}</div>
-      <div class="field"><span>Texture</span>${textures(ins.texture || 'solid', ins.color)}</div>
+      <p class="note" style="margin:0">Select an entry in the lane to give it a texture of its own.</p>
       <div class="actions"><button class="btn" data-act="enter" type="button">Enters at playhead</button><button class="btn" data-act="exit" type="button">Exits at playhead</button><button class="btn" data-act="rminst" type="button">Delete instrument</button></div></div>`;
     bindField($('#iLabel'), v => { ins.name = v; });
   } else if (sel.kind === 'ispan'){
     const ins = S.instruments.find(i => i.id === sel.inst), s = ins.spans.find(s => s.id === sel.id);
-    el.innerHTML = `<div class="stack"><div><div class="eyebrow">Instrument entry</div><h2>${esc(ins.name)}</h2><div class="meta">${timesLine(s.start, s.end)}</div></div>
+    el.innerHTML = `<div class="stack">${ihead(`<div class="eyebrow">Instrument entry</div><h2>${esc(ins.name)}</h2><div class="meta">${timesLine(s.start, s.end)}</div>`,
+        styleRow('Texture', textures(s.texture || 'solid', ins.color)))}
       <label class="field"><span>Commentary</span><textarea id="iComment" placeholder="Role in the texture: melody, countermelody, pad, rhythm…">${esc(s.comment || '')}</textarea></label>
       <div class="actions"><button class="btn" data-act="playsel" type="button">Play from here</button><button class="btn" data-act="del" type="button">Delete entry</button></div></div>`;
     bindField($('#iComment'), v => { s.comment = v; });
@@ -403,11 +416,15 @@ $('#insp').addEventListener('click', e => {
   if (presenting) return;
   if (a === 'color') return edit(() => {
     if (sel.kind === 'span') selSpans().forEach(s => s.color = b.dataset.c);
+    else if (sel.kind === 'marker'){ const m = S.markers.find(m => m.id === sel.id); if (b.dataset.c) m.color = b.dataset.c; else delete m.color; }
     else if (sel.kind === 'inst') S.instruments.find(i => i.id === sel.id).color = b.dataset.c;
   });
-  if (a === 'texture') return edit(() => { S.instruments.find(i => i.id === sel.id).texture = b.dataset.t; });
-  if (a === 'vocab') return edit(() => { target().label = b.dataset.w; });
-  if (a === 'sym') return edit(() => { const t = target(); t.label = (t.label || '') + b.dataset.w; });
+  if (a === 'texture') return edit(() => {
+    const t = b.dataset.t === 'solid' ? null : b.dataset.t, set = o => { if (t) o.texture = t; else delete o.texture; };
+    if (sel.kind === 'span') selSpans().forEach(set);
+    else if (sel.kind === 'ispan') set(S.instruments.find(i => i.id === sel.inst).spans.find(s => s.id === sel.id));
+  });
+  if (a === 'vocab') return edit(() => { target().label = b.dataset.w; if (sel.kind === 'span') noteRecent(b.dataset.w); });
   if (a === 'group') return cmdGroup();
   if (a === 'split') return cmdSplit();
   if (a === 'joinl') return cmdJoin(-1);
@@ -427,6 +444,12 @@ $('#insp').addEventListener('click', e => {
     const s = ins.spans.find(s => t > s.start && t <= s.end); if (!s){ toast(ins.name + ' is not playing at the playhead.'); return; } s.end = t;
   });
 });
+// Label suggestion groups for blocks: Letters, then what this viewer used lately, then the course's groups.
+function labelGroups(){
+  const recent = recentLabels(), i = VOCAB.findIndex(g => g[0] === 'Letters');
+  if (!recent.length) return VOCAB;
+  const out = VOCAB.slice(); out.splice(i + 1, 0, ['Recent', recent]); return out;
+}
 function target(){ if (sel.kind === 'span') return selSpans()[0]; if (sel.kind === 'marker') return S.markers.find(m => m.id === sel.id); return {}; }
 
 /* ---------- rendering: comments, info ---------- */
@@ -441,10 +464,10 @@ function renderComments(){
     }
   };
   walk(S.tiers.length - 1, 0, dur() + 1, 0);
-  for (const m of S.markers) if (m.comment) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0]});
+  for (const m of S.markers) if (m.comment) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0], tint: mkTint(m)});
   for (const i of S.instruments) for (const s of i.spans) if (s.comment) out.push({t: s.start, depth: 0, head: i.name, sub: 'Instrument · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: i.color});
   const el = $('#comments');
-  el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${o.mk ? `<span class="mk-g">${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`}${esc(o.head)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
+  el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${o.mk ? `<span class="mk-g"${o.tint ? ` style="${o.tint.slice(1)}"` : ''}>${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`}${esc(o.head)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
     : `<p class="note">No commentary yet. Select any block, marker, or instrument entry and write in its Commentary box. It collects here in formal order, larger sections first.</p>`;
 }
 $('#comments').addEventListener('click', e => { const b = e.target.closest('[data-seek]'); if (b){ P.seek(+b.dataset.seek); scrollTo(+b.dataset.seek); } });
@@ -569,7 +592,7 @@ inner.addEventListener('dblclick', e => { if (e.target.closest('.sp, .mk')) focu
 inner.addEventListener('click', e => {
   const b = e.target.closest('[data-k="addinst"],[data-k="addlevel"]'); if (!b) return;
   if (b.dataset.k === 'addinst') edit(() => {
-    const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], texture: TEXTURES[n % TEXTURES.length], spans: []};
+    const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], spans: []};
     S.instruments.push(ins); sel = {kind: 'inst', id: ins.id};
   });
   else edit(() => { const k = S.tiers.length; S.tiers.push([mk(0, dur())]); S.tierNames[k] = TIER_NAMES[k] || 'Level ' + (k + 1); sel = {kind: 'tier', tier: k}; });
@@ -729,7 +752,8 @@ $('#fOpen').onchange = async e => {
 // Opens an analysis object (from a file or a course submission). Returns false if it isn't one.
 function openAnalysis(data, label){
   if (!data || data.app !== 'listening-map' || !Array.isArray(data.tiers) || !data.source){ toast('That file is not a Listening Map analysis.'); return false; }
-  S = data; S.markers ||= []; S.instruments ||= []; S.tierNames ||= []; S.grid ||= {on: false, bpm: 120, bpb: 4, offset: 0, snap: false}; S.meta ||= {title: '', composer: '', student: '', notes: ''};
+  S = data; S.markers ||= []; S.instruments ||= [];
+  for (const i of S.instruments){ if (i.texture){ if (i.texture !== 'solid') (i.spans || []).forEach(s => { s.texture ||= i.texture; }); delete i.texture; } } S.tierNames ||= []; S.grid ||= {on: false, bpm: 120, bpb: 4, offset: 0, snap: false}; S.meta ||= {title: '', composer: '', student: '', notes: ''};
   undoStack = []; redoStack = []; sel = null; activeTier = 0; peaks = null; P.none(); P._t = 0;
   if (S.source.type === 'youtube'){ waveMsg = 'No waveform for YouTube sources'; hideBanner(); useYouTube(S.source.youtubeId); }
   else if (S.source.type === 'demo'){ hideBanner(); loadDemoAudio(); }
@@ -770,11 +794,12 @@ $('#piece').addEventListener('toggle', () => { try { localStorage.setItem('liste
 
 /* ---------- settings menu ---------- */
 // The Settings menu holds what is used now and then: files, the look, and the shortcut list.
-function showMenu(on){ $('#menu').hidden = !on; $('#bMenu').setAttribute('aria-expanded', on); if (on) $('#menu .mi').focus(); }
+const menuItems = () => [...document.querySelectorAll('#menu .mi')].filter(b => b.offsetParent);
+function showMenu(on){ $('#menu').hidden = !on; $('#bMenu').setAttribute('aria-expanded', on); if (on) menuItems()[0].focus(); }
 $('#bMenu').onclick = () => showMenu($('#menu').hidden);
 $('#menu').addEventListener('click', e => { if (e.target.closest('.mi')) showMenu(false); });
 $('#menu').addEventListener('keydown', e => {
-  const items = [...document.querySelectorAll('#menu .mi')], i = items.indexOf(document.activeElement);
+  const items = menuItems(), i = items.indexOf(document.activeElement);
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
   else if (e.key === 'Escape'){ e.stopPropagation(); showMenu(false); $('#bMenu').focus(); }
   else if (e.key === 'Tab') showMenu(false);
@@ -862,20 +887,20 @@ function demoState(){
     tiers: [
       [s(0, 8, 'Intro', 'sky', {aux: true}), s(8, 16, 'a', 'teal'), s(16, 24, 'a′', 'teal', {comment: 'Same opening as a, but IV is replaced by ii so the phrase leans harder into V.'}), s(24, 32, 'c', 'amber'), s(32, 40, 'c′', 'amber', {comment: 'Ends on the tonic: the first real arrival of the song.'}),
        s(40, 48, 'a', 'teal'), s(48, 56, 'a′', 'teal'), s(56, 64, 'c', 'amber'), s(64, 72, 'c′', 'amber'), s(72, 80, 'Outro', 'sky', {aux: true})],
-      [s(0, 8, 'Intro', 'sky', {aux: true, comment: 'Pad alone states the verse progression I vi IV V.'}), s(8, 24, 'Verse 1', 'teal', {comment: 'Bass and kick enter together. Eighth-note bass keeps the energy moderate.'}), s(24, 40, 'Chorus', 'amber', {comment: 'Progression rotates to start on IV. Drum density doubles and the lead enters.'}),
-       s(40, 56, 'Verse 2', 'teal', {comment: 'A backbeat is added that was missing from verse 1, so the second rotation is not an exact repeat.'}), s(56, 72, 'Chorus', 'amber'), s(72, 80, 'Outro', 'sky', {aux: true, comment: 'Drums and lead drop out; the texture fades over IV V I.'})]
+      [s(0, 8, 'Intro', 'sky', {aux: true, comment: 'Pad alone states the verse progression I vi IV V.'}), s(8, 24, 'Verse 1', 'teal', {comment: 'Bass and kick enter together. Eighth-note bass keeps the energy moderate.'}), s(24, 40, 'Chorus', 'amber', {texture: 'dots', comment: 'Progression rotates to start on IV. Drum density doubles and the lead enters.'}),
+       s(40, 56, 'Verse 2', 'teal', {comment: 'A backbeat is added that was missing from verse 1, so the second rotation is not an exact repeat.'}), s(56, 72, 'Chorus', 'amber', {texture: 'dots'}), s(72, 80, 'Outro', 'sky', {aux: true, comment: 'Drums and lead drop out; the texture fades over IV V I.'})]
     ],
     markers: [
       {id: uid(), time: 8, label: 'Groove enters', kind: 'texture', comment: ''},
       {id: uid(), time: 38, label: 'PAC', kind: 'cadence', comment: 'V to I in the last two bars of the chorus.'},
-      {id: uid(), time: 56, label: 'Climax', kind: 'climax', comment: 'Fullest texture of the piece begins here.'},
+      {id: uid(), time: 56, label: 'Climax', kind: 'climax', color: 'rose', comment: 'Fullest texture of the piece begins here.'},
       {id: uid(), time: 70, label: 'PAC', kind: 'cadence', comment: ''}
     ],
     instruments: [
-      {id: uid(), name: 'Pad', color: 'slate', texture: 'solid', spans: [{id: uid(), start: 0, end: 80, comment: 'Sustained triads throughout.'}]},
-      {id: uid(), name: 'Bass', color: 'blue', texture: 'stripes', spans: [{id: uid(), start: 8, end: 80, comment: ''}]},
-      {id: uid(), name: 'Drums', color: 'rose', texture: 'dots', spans: [{id: uid(), start: 8, end: 72, comment: ''}]},
-      {id: uid(), name: 'Lead', color: 'amber', texture: 'circles', spans: [{id: uid(), start: 24, end: 40, comment: 'Arpeggiates the chord tones in eighth notes.'}, {id: uid(), start: 56, end: 72, comment: ''}]}
+      {id: uid(), name: 'Pad', color: 'slate', spans: [{id: uid(), start: 0, end: 80, comment: 'Sustained triads throughout.'}]},
+      {id: uid(), name: 'Bass', color: 'blue', spans: [{id: uid(), start: 8, end: 80, comment: ''}]},
+      {id: uid(), name: 'Drums', color: 'rose', spans: [{id: uid(), start: 8, end: 72, comment: ''}]},
+      {id: uid(), name: 'Lead', color: 'amber', spans: [{id: uid(), start: 24, end: 40, comment: 'Arpeggiates the chord tones in eighth notes.'}, {id: uid(), start: 56, end: 72, texture: 'stripes', comment: ''}]}
     ]};
 }
 
