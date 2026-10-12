@@ -56,6 +56,7 @@ One file per course in `courses/`. Two examples are included: `theory-example.js
 | `VOCAB` | Label suggestion groups: `Letters`, `Song form`, `Classical form`, `Phrase and theme`, `Production`, or your own `{"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}`. `Letters` (A to F and W to Z, in capitals and lowercase) always comes first unless the course lists it somewhere else. |
 | `MARKER_CHIPS` | Quick labels for markers (for example `PAC`, `HC`, or `Drop`, `Riser`). |
 | `LEVEL_NAMES` | Names for new levels, bottom up (for example `Phrases`, `Sections`, `Large form`). |
+| `EXAMPLE` | The example analysis shown when the page opens: `demo` (a short generated track, the default) or `k545` (Mozart, Piano Sonata in C, K. 545, first movement, from a score-synced YouTube video). Both are under **Settings → Examples**. |
 | `WELCOME` | Optional text for the banner over the example analysis. |
 
 ## Layout

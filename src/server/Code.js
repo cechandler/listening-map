@@ -91,7 +91,7 @@ function submitAnalysis(p) {
   let d;
   try { d = JSON.parse(json); } catch (e) { throw new Error("FORMAT: That isn't a Listening Map analysis."); }
   if (!d || d.app !== "listening-map" || !Array.isArray(d.tiers) || !d.source) throw new Error("FORMAT: That isn't a Listening Map analysis.");
-  if (d.source.type === "demo") throw new Error("DEMO: Open your own audio or a YouTube link and make your analysis first.");
+  if (d.source.type === "demo" || d.source.example) throw new Error("DEMO: Open your own audio or a YouTube link and make your analysis first.");
   const open = openAssignments_();
   let assignment = String((p && p.assignment) || "").trim();
   if (open.length && open.indexOf(assignment) < 0) throw new Error("ASSIGNMENT: That assignment isn't open for submissions.");

@@ -53,7 +53,7 @@ function mineList(){
 }
 function openSubmit(){
   if (!SESSION) return;
-  const asg = SESSION.assignments || [], demo = S.source.type === 'demo';
+  const asg = SESSION.assignments || [], demo = isExample();
   $('#subCourse').textContent = SESSION.course || 'your course';
   $('#subHead').textContent = 'Hand in this analysis';
   $('#subForm').hidden = false; $('#subDone').hidden = true; $('#subCancel').textContent = 'Cancel';
@@ -72,7 +72,7 @@ function openSubmit(){
 }
 async function doSubmit(){
   const name = $('#subName').value.trim();
-  if (S.source.type === 'demo') return;
+  if (isExample()) return;
   if (!name){ toast('Add your name first.'); $('#subName').focus(); return; }
   if (name !== S.meta.student) edit(() => { S.meta.student = name; });
   renderInfo();
