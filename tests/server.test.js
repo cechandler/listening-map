@@ -87,6 +87,7 @@ test("submissions need a signed-in user, a real analysis, and an open assignment
   s.as("ada@school.edu");
   assert.throws(() => s.ctx.submitAnalysis({ json: "{}" }), /FORMAT/);
   assert.throws(() => s.ctx.submitAnalysis({ json: analysis({ source: { type: "demo" } }) }), /DEMO/);
+  assert.throws(() => s.ctx.submitAnalysis({ json: analysis({ source: { type: "youtube", youtubeId: "I_AX4R-d29o", example: true } }) }), /DEMO/);
   s.sheets.Assignments.appendRow(["Map 1", ""]); s.sheets.Assignments.appendRow(["Map 2", "no"]);
   assert.deepEqual(s.ctx.getSession().assignments, ["Map 1"]);
   assert.throws(() => s.ctx.submitAnalysis({ assignment: "Map 2", json: analysis() }), /ASSIGNMENT/);

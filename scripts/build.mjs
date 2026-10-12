@@ -10,6 +10,7 @@ const read = p => fs.readFileSync(path.join(root, p), "utf8");
 const arg = (name, d) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : d; };
 
 export const ACCESS = ["DOMAIN", "ANYONE", "ANYONE_ANONYMOUS", "MYSELF"];
+export const EXAMPLES = ["demo", "k545"];
 const VOCAB_GROUPS = ["Letters", "Song form", "Classical form", "Phrase and theme", "Production"];
 
 // Theme ids: "studio" is the base look in styles.css; every other theme is src/client/themes/<id>.css.
@@ -74,6 +75,7 @@ export function checkCourse(course, file) {
     if (typeof v === "string" && !VOCAB_GROUPS.includes(v)) errs.push(`VOCAB: unknown group "${v}" (known: ${VOCAB_GROUPS.join(", ")}, or {"name", "words"})`);
     if (typeof v === "object" && !(v && v.name && Array.isArray(v.words))) errs.push(`VOCAB: a custom group needs "name" and "words"`);
   }
+  if (course.EXAMPLE && !EXAMPLES.includes(course.EXAMPLE)) errs.push(`EXAMPLE must be one of ${EXAMPLES.join(", ")}`);
   if (errs.length) throw new Error(`${file}:\n  ` + errs.join("\n  "));
 }
 

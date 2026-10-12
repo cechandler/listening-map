@@ -409,6 +409,8 @@ function keepTouched(){
 }
 const countTouches = e => { touchesDown = e.touches.length; if (!touchesDown){ const k = document.getElementById('touchKeep'); if (k) k.remove(); } };
 ['touchstart', 'touchend', 'touchcancel'].forEach(t => document.addEventListener(t, countTouches, {passive: true, capture: true}));
+// A finger's pointerdown comes before its touchstart, and a tap on a block redraws at once, so count the finger from there.
+document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') touchesDown = Math.max(touchesDown, 1); }, {passive: true, capture: true});
 function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
 
 /* ---------- rendering: inspector ---------- */
@@ -1070,14 +1072,103 @@ function demoState(){
     ]};
 }
 
+/* ---------- Mozart example: Piano Sonata in C, K. 545, I (YouTube, score-synced) ---------- */
+// The map is written in measures. K545_TIMES holds the start time (seconds) of anchor measures in the video, for each
+// pass in the order played; the times between anchors are spread evenly over the measures. 'end' is when the last
+// chord dies away. The anchors were found by matching the recording's harmony, measure by measure, to the score
+// (the repeat to the first pass, and the recapitulation to the exposition a fourth higher). Ingrid Haebler takes
+// the exposition repeat and not the second one.
+const K545_VIDEO = 'I_AX4R-d29o';
+const K545_TIMES = {
+  passes: [
+    {part: 'expo', at: {1: 7.34, 5: 15.23, 12: 28.05, 13: 30.09, 14: 32.00, 26: 54.52, 28: 58.31}},
+    {part: 'expo', at: {1: 61.39, 5: 69.17, 13: 84.13, 14: 86.01, 26: 108.41, 28: 112.22}},
+    {part: 'dev', at: {29: 114.87, 42: 139.58, 46: 147.35, 57: 167.5, 58: 169.4, 59: 171.29, 71: 193.58, 73: 197.32}}
+  ],
+  end: 202
+};
+function k545State(){
+  // Passes in playing order: the exposition (mm. 1-28) and the development and recapitulation (mm. 29-73), each with its repeat if taken.
+  const passes = K545_TIMES.passes, end = K545_TIMES.end;
+  // Performance-order anchors: [bar index counted from the start of the performance, seconds].
+  const pts = []; let base = 0;
+  const first = p => p.part === 'expo' ? 1 : 29, last = p => p.part === 'expo' ? 28 : 73;
+  for (const p of passes){ for (const [m, t] of Object.entries(p.at)) pts.push([base + (+m - first(p)), t]); base += last(p) - first(p) + 1; }
+  pts.push([base, end]); pts.sort((a, b) => a[0] - b[0]);
+  const at = x => { let i = 0; while (i < pts.length - 2 && x > pts[i + 1][0]) i++; const [x0, t0] = pts[i], [x1, t1] = pts[i + 1]; return t0 + (x - x0) * (t1 - t0) / (x1 - x0); };
+  const tiers = [[], [], []], markers = [];
+  let off = 0;
+  passes.forEach((p, pi) => {
+    const f = first(p), t = m => at(off + m - f), again = passes.slice(0, pi).some(q => q.part === p.part);
+    const s = (lvl, a, b, label, color, o = {}) => tiers[lvl].push(mk(t(a), t(b + 1), label, color, again ? {...o, comment: ''} : o));
+    const mark = (m, label, kind, comment, o = {}) => markers.push({id: uid(), time: t(m), label, kind, comment: again ? '' : comment, ...o});
+    if (p.part === 'expo'){
+      s(0, 1, 4, 'P', 'teal', {comment: 'mm. 1–4. The primary theme in C: a singing right hand over an Alberti bass.'});
+      s(0, 5, 12, 'TR', 'amber', {comment: 'mm. 5–12. Sixteenth-note scales descend in sequence, then broken chords push toward D major, the dominant of G.'});
+      s(0, 13, 13, 'Lead-in', 'slate', {aux: true, comment: 'm. 13. One bar of accompaniment over the dominant of G before the new theme enters.'});
+      s(0, 14, 25, 'S', 'rose', {comment: 'mm. 14–25. The secondary theme, in G major, the dominant.'});
+      s(0, 26, 28, 'Codetta', 'sky', {comment: 'mm. 26–28. Closing gestures that confirm G.'});
+      s(1, 1, 28, again ? 'Exposition (repeat)' : 'Exposition', 'teal', {texture: again ? 'stripes' : 'solid', comment: 'mm. 1–28. Moves from C to G, the dominant.'});
+      mark(12, 'HC', 'cadence', 'm. 12. The transition stops on a D major chord, the dominant of G: the medial caesura.');
+      mark(26, 'PAC', 'cadence', 'm. 26. The perfect authentic cadence in G that closes the secondary theme.');
+    } else {
+      s(0, 29, 41, 'Dev', 'violet', {comment: 'mm. 29–41. Begins in G minor and moves through minor keys, then turns toward F.'});
+      s(0, 42, 45, 'P', 'teal', {comment: 'mm. 42–45. The primary theme returns in F major, the subdominant, not in C.'});
+      s(0, 46, 57, 'TR', 'amber', {comment: 'mm. 46–57. Four bars longer than in the exposition. The added music turns the harmony back toward C, so the transition can stop on G, the dominant of C.'});
+      s(0, 58, 58, 'Lead-in', 'slate', {aux: true});
+      s(0, 59, 70, 'S', 'rose', {comment: 'mm. 59–70. The secondary theme, now in C, the tonic.'});
+      s(0, 71, 73, 'Codetta', 'sky');
+      s(1, 29, 41, again ? 'Development (repeat)' : 'Development', 'violet', {texture: again ? 'stripes' : 'solid'});
+      s(1, 42, 73, again ? 'Recapitulation (repeat)' : 'Recapitulation', 'rose', {texture: again ? 'stripes' : 'solid', comment: 'mm. 42–73. Everything after the transition returns in C.'});
+      mark(29, 'to g', 'modulation', 'm. 29. The development opens in G minor, the minor dominant.');
+      mark(42, 'Recap in F', 'modulation', 'm. 42. The subdominant recapitulation: Mozart brings the opening back in F. The transition is extended so the music still reaches C for the secondary theme.', {color: 'rose'});
+      mark(57, 'HC', 'cadence', 'm. 57. The transition stops on G, the dominant of C.');
+      mark(71, 'PAC', 'cadence', 'm. 71. The perfect authentic cadence in C.');
+    }
+    off += last(p) - f + 1;
+  });
+  // Large form: two halves, as in a binary form, each repeated.
+  for (const part of ['expo', 'dev']){
+    const idx = passes.map((p, i) => p.part === part ? i : -1).filter(i => i >= 0); if (!idx.length) continue;
+    const lvl1 = tiers[1].filter(b => part === 'expo' ? /Exposition/.test(b.label) : !/Exposition/.test(b.label));
+    tiers[2].push(mk(lvl1[0].start, lvl1[lvl1.length - 1].end, part === 'expo' ? 'Part 1' : 'Part 2', part === 'expo' ? 'teal' : 'rose',
+      {comment: part === 'expo' ? 'The exposition' + (idx.length > 1 ? ', played twice.' : '.') : 'The development and recapitulation' + (idx.length > 1 ? ', played twice.' : '.')}));
+  }
+  // Fill any gap before m. 1 and after the last chord, so every level spans the recording.
+  for (const tier of tiers){ tier.sort((a, b) => a.start - b.start); if (tier[0].start > EPS) tier.unshift(mk(0, tier[0].start, '', 'slate', {aux: true})); if (tier[tier.length - 1].end < end - EPS) tier.push(mk(tier[tier.length - 1].end, end, '', 'slate', {aux: true})); }
+  return {app: 'listening-map', version: 1,
+    meta: {title: 'Piano Sonata in C, K. 545, I. Allegro', composer: 'Wolfgang Amadeus Mozart', student: 'Example analysis',
+      notes: 'Sonata form. The exposition moves from C to G; the development begins in G minor; the recapitulation begins in F, the subdominant, and is adjusted so the secondary theme returns in C. Measure numbers are in each comment.'},
+    source: {type: 'youtube', youtubeId: K545_VIDEO, name: 'Mozart, Piano Sonata K. 545, I, Ingrid Haebler (YouTube)', duration: end, example: true},
+    grid: {on: false, bpm: 144, bpb: 4, offset: 0, snap: false},
+    tierNames: ['Themes', 'Sections', 'Large form'], tiers, markers, instruments: []};
+}
+
+// The examples a viewer can open from Settings. The course file's EXAMPLE picks the one shown first.
+const EXAMPLES = {
+  demo: {name: 'Demo track (generated)', ready: () => true, banner: 'You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.'},
+  k545: {name: 'Mozart, Piano Sonata K. 545, I', ready: () => !!K545_TIMES, banner: 'You are looking at an example analysis of Mozart’s Piano Sonata in C, K. 545, first movement. Press play to listen, then open your own audio or a YouTube link to start a new analysis.'}
+};
+function openExample(id, welcome){
+  P.none();
+  const ex = EXAMPLES[id] && EXAMPLES[id].ready() ? id : 'demo';
+  S = ex === 'demo' ? demoState() : k545State();
+  undoStack = []; redoStack = []; sel = null; activeTier = 0; laneFocus = 'tier'; activeInst = null; pendingAudio = null; peaks = null; cmFilter.clear(); P._t = 0;
+  fit(); renderAll(); renderInfo(); tl.scrollLeft = 0;
+  if (ex === 'demo') loadDemoAudio(); else useYouTube(S.source.youtubeId);
+  showBanner(esc(welcome && CFG.WELCOME || EXAMPLES[ex].banner));
+}
+// The example analyses can't be submitted; students start their own.
+const isExample = () => S.source.type === 'demo' || !!S.source.example;
+const exItems = Object.entries(EXAMPLES).filter(([, e]) => e.ready());
+$('#exampleItems').hidden = exItems.length < 2;
+$('#exampleList').innerHTML = exItems.map(([id, e]) => `<button class="mi" type="button" role="menuitem" data-ex="${id}">${esc(e.name)}</button>`).join('');
+$('#exampleList').onclick = e => { const b = e.target.closest('[data-ex]'); if (b) openExample(b.dataset.ex); };
+
 /* ---------- boot ---------- */
-S = demoState();
-activeTier = 0;
 $('#courseName').textContent = CFG.COURSE || '';
-fit(); renderAll(); renderInfo();
 requestAnimationFrame(loop);
-loadDemoAudio();
-showBanner(esc(CFG.WELCOME || 'You are looking at an example analysis of a short generated track. Press play to listen, then open your own audio or a YouTube link to start a new analysis.'));
+openExample(CFG.EXAMPLE || 'demo', true);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTimeline, 120); });
 // A new look changes the waveform color and may change the label gutter, so redraw the timeline.
 onLookChange = () => { if (S) renderTimeline(); };

@@ -35,6 +35,7 @@ test("course files are checked", () => {
   assert.throws(() => checkCourse({ COURSE: "X", TEACHERS: [] }, "x"), /TEACHERS/);
   assert.throws(() => checkCourse({ COURSE: "X", TEACHERS: ["a@b"], VOCAB: ["Jazz"] }, "x"), /unknown group/);
   assert.throws(() => checkCourse({ COURSE: "X", TEACHERS: ["a@b"], ACCESS: "PUBLIC" }, "x"), /ACCESS/);
+  assert.throws(() => checkCourse({ COURSE: "X", TEACHERS: ["a@b"], EXAMPLE: "bach" }, "x"), /EXAMPLE/);
   assert.doesNotThrow(() => checkCourse({ COURSE: "X", TEACHERS: ["a@b"], VOCAB: ["Song form", { name: "Fugue", words: ["Subject"] }] }, "x"));
 });
 
