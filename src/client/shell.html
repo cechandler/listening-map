@@ -17,24 +17,25 @@
   <header class="top">
     <div class="brand"><h1>Listening Map</h1><span class="course" id="courseName"></span><span class="doc" id="docTitle"></span><span class="presentpill">Presentation</span></div>
     <div class="tools">
-      <label class="btn edit-only" for="fAudio">Open audio</label>
-      <input type="file" id="fAudio" accept="audio/*,video/mp4" hidden>
-      <button class="btn edit-only" id="bYT" type="button">YouTube link</button>
-      <label class="btn" for="fOpen">Open analysis</label>
-      <input type="file" id="fOpen" accept=".json,application/json" hidden>
-      <span class="sep"></span>
       <button class="btn pri" id="bSubmit" type="button" hidden>Submit</button>
-      <button class="btn" id="bExport" type="button">Export analysis</button>
-      <button class="btn" id="bReport" type="button">Text report</button>
       <button class="btn" id="bSubs" type="button" hidden>Submissions</button>
-      <span class="sep"></span>
-      <button class="btn" id="bLook" type="button" aria-expanded="false" aria-controls="lookPop">Look</button>
       <label class="toggle"><input type="checkbox" id="present"> Present</label>
+      <div class="menuwrap">
+        <button class="btn" id="bMenu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu"><svg class="burger" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M2 8h12M2 12.5h12"/></svg>Settings</button>
+        <div class="menu" id="menu" role="menu" hidden>
+          <button class="mi" id="bImport" type="button" role="menuitem">Import analysis…</button>
+          <input type="file" id="fOpen" accept=".json,application/json" hidden>
+          <button class="mi" id="bExport" type="button" role="menuitem">Export analysis</button>
+          <hr>
+          <button class="mi" id="bLook" type="button" role="menuitem" aria-expanded="false" aria-controls="lookPop">Theme and light or dark</button>
+          <button class="mi" id="bKeys" type="button" role="menuitem" aria-expanded="false" aria-controls="keysPop">Keyboard shortcuts</button>
+        </div>
+      </div>
     </div>
   </header>
 
   <section class="pop look" id="lookPop" hidden aria-label="Look">
-    <div class="lookhead"><div><div class="eyebrow">Look</div><h2>Theme</h2></div>
+    <div class="lookhead"><div><div class="eyebrow">Settings</div><h2>Theme</h2></div>
       <div class="seg" role="group" aria-label="Light or dark">
         <button type="button" data-mode="system">System</button><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button>
       </div>
@@ -44,12 +45,28 @@
     <span class="note">Saved on this device only. It changes how the page looks, never your analysis.</span>
   </section>
 
-  <form class="pop" id="ytPop" hidden>
-    <input type="text" id="ytUrl" placeholder="Paste a YouTube link, e.g. https://youtu.be/…" autocomplete="off">
-    <button class="btn pri" type="submit">Load video</button>
-    <button class="btn" type="button" id="ytCancel">Cancel</button>
-    <span class="note" style="flex-basis:100%">Starts a new analysis timed to the video. Save your current work first.</span>
-  </form>
+  <section class="pop keyspop" id="keysPop" hidden aria-label="Keyboard shortcuts">
+    <div class="lookhead"><div><div class="eyebrow">Settings</div><h2>Keyboard shortcuts</h2></div>
+      <button class="btn sm" type="button" id="keysClose">Done</button>
+    </div>
+    <table class="keys">
+      <tr><td><kbd>Space</kbd></td><td>Play or pause</td></tr>
+      <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block</td></tr>
+      <tr><td><kbd>S</kbd></td><td>Split the active level at the playhead</td></tr>
+      <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
+      <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
+      <tr><td><kbd>Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
+      <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></td><td>Zoom in, zoom out, fit</td></tr>
+      <tr><td>Pinch, or <kbd>Ctrl</kbd> + scroll</td><td>Zoom the timeline around the pointer (trackpad, mouse wheel, or touchscreen; <kbd>⌘</kbd> on Mac)</td></tr>
+      <tr><td><kbd>Shift</kbd> + scroll</td><td>Move along the timeline with a mouse wheel</td></tr>
+      <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo and redo (<kbd>⌘</kbd> on Mac)</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
+      <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd>Alt</kbd> to ignore snapping.</td></tr>
+    </table>
+  </section>
 
   <form class="pop submit" id="submitPop" hidden>
     <div class="stack" style="flex:1 1 100%">
@@ -76,6 +93,11 @@
 
   <div class="media"><div id="ytBox" hidden><div id="yt"></div></div></div>
 
+  <details class="card piece" id="piece" open>
+    <summary><span class="eyebrow">Piece and grid</span><span class="meta" id="pieceSum"></span></summary>
+    <div id="pieceBody"></div>
+  </details>
+
   <section class="transport" aria-label="Transport">
     <button class="play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
     <div class="readout" id="readout">0:00.0<small>&nbsp;</small></div>
@@ -100,40 +122,28 @@
       <button class="btn sm" id="bRedo" type="button" aria-label="Redo">Redo</button>
     </div>
     <label class="toggle edit-only" title="Snap edits to the nearest beat when the measure grid is on"><input type="checkbox" id="snap"> Snap to beat</label>
+    <div class="grp edit-only src"><span class="lbl">Source</span>
+      <label class="btn sm" for="fAudio">Open audio</label>
+      <input type="file" id="fAudio" accept="audio/*,video/mp4" hidden>
+      <button class="btn sm" id="bYT" type="button" aria-expanded="false" aria-controls="ytPop">YouTube link</button>
+    </div>
   </section>
+
+  <form class="pop" id="ytPop" hidden>
+    <input type="text" id="ytUrl" placeholder="Paste a YouTube link, e.g. https://youtu.be/…" autocomplete="off">
+    <button class="btn pri" type="submit">Load video</button>
+    <button class="btn" type="button" id="ytCancel">Cancel</button>
+    <span class="note" style="flex-basis:100%">Starts a new analysis timed to the video. Save your current work first.</span>
+  </form>
 
   <div class="tl" id="tl"><div class="tl-inner" id="inner"></div></div>
   <p class="note tlhint">Pinch on a trackpad or touchscreen, or hold <kbd>Ctrl</kbd> (<kbd>⌘</kbd> on Mac) and scroll, to zoom around the pointer. <kbd>Shift</kbd> and scroll moves along the timeline.</p>
 
   <div class="lower">
     <section class="card" id="insp" aria-label="Inspector"></section>
-    <section class="card" aria-label="Analysis details">
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="comments" aria-selected="true" type="button">Comments</button>
-        <button class="tab" role="tab" data-tab="info" aria-selected="false" type="button">Piece and grid</button>
-        <button class="tab" role="tab" data-tab="keys" aria-selected="false" type="button">Shortcuts</button>
-      </div>
-      <div id="tab-comments"></div>
-      <div id="tab-info" hidden></div>
-      <div id="tab-keys" hidden>
-        <table class="keys">
-          <tr><td><kbd>Space</kbd></td><td>Play or pause</td></tr>
-          <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block</td></tr>
-          <tr><td><kbd>S</kbd></td><td>Split the active level at the playhead</td></tr>
-          <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
-          <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
-          <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
-          <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
-          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
-          <tr><td><kbd>Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
-          <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></td><td>Zoom in, zoom out, fit</td></tr>
-          <tr><td>Pinch, or <kbd>Ctrl</kbd> + scroll</td><td>Zoom the timeline around the pointer (trackpad, mouse wheel, or touchscreen; <kbd>⌘</kbd> on Mac)</td></tr>
-          <tr><td><kbd>Shift</kbd> + scroll</td><td>Move along the timeline with a mouse wheel</td></tr>
-          <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo and redo (<kbd>⌘</kbd> on Mac)</td></tr>
-          <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
-          <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd>Alt</kbd> to ignore snapping.</td></tr>
-        </table>
-      </div>
+    <section class="card" aria-label="Comments">
+      <div class="eyebrow">Commentary</div><h2>Comments</h2>
+      <div id="comments"></div>
     </section>
   </div>
 </div>

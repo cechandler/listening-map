@@ -101,9 +101,48 @@ await step("touchscreen two-finger pinch", async () => {
   await tp.context().close();
 });
 
+await step("header: Settings menu holds import, export, theme, and shortcuts", async () => {
+  assert.equal(await page.locator("#bReport").count(), 0, "no separate text report");
+  assert.equal(await page.isVisible("#menu"), false);
+  await page.click("#bMenu");
+  for (const id of ["#bImport", "#bExport", "#bLook", "#bKeys"]) assert.ok(await page.isVisible(id), id + " is in the menu");
+  await page.click("#bKeys");
+  assert.ok(await page.isVisible("#keysPop .keys"));
+  await page.click("#keysClose");
+  await page.click("#bMenu");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.isVisible("#menu"), false, "Escape closes the menu");
+  // Sources live in the transport; the piece and grid panel sits above it.
+  assert.ok(await page.isVisible(".transport label[for=fAudio]"));
+  assert.ok(await page.isVisible(".transport #bYT"));
+  const order = await page.evaluate(() => [...document.querySelectorAll("#piece, .transport, #tl")].map(e => e.id || e.className));
+  assert.deepEqual(order, ["piece", "transport", "tl"]);
+  assert.ok(await page.isVisible("#gBpm"));
+});
+
+await step("label suggestions start with letters", async () => {
+  await page.click(".sp");
+  assert.equal(await page.textContent("#insp .chipgroup .eyebrow"), "Letters");
+  await page.click('#insp .chip[data-w="B"]');
+  assert.equal(await page.evaluate(() => selSpans()[0].label), "B");
+  await page.keyboard.press("Control+z");
+});
+
+await step("instrument lanes take a texture", async () => {
+  assert.ok(await page.locator(".is.tx-stripes").count() > 0, "the demo bass is striped");
+  await page.click('.lab[data-k="instlab"]');
+  await page.click('#insp [data-act="texture"][data-t="crosshatch"]');
+  const id = await page.evaluate(() => sel.id);
+  assert.equal(await page.evaluate(id => S.instruments.find(i => i.id === id).texture, id), "crosshatch");
+  assert.ok(await page.locator(`.is.tx-crosshatch[data-inst="${id}"]`).count() > 0);
+  await page.keyboard.press("Escape");
+});
+
 await step("every theme applies, in light and dark", async () => {
   const looks = await page.evaluate(() => lookChoices().map(l => l.id));
+  await page.click("#bMenu");
   await page.click("#bLook");
+  assert.equal(await page.isVisible("#menu"), false, "picking a menu item closes the menu");
   const seen = new Set();
   for (const id of looks) {
     for (const mode of ["light", "dark"]) {
@@ -145,6 +184,7 @@ await step("instructor: submit, list, and open a submission", async () => {
 });
 
 await step("export downloads the analysis", async () => {
+  await page.click("#bMenu");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bExport")]);
   assert.match(dl.suggestedFilename(), /\.listening-map\.json$/);
 });

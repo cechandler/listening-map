@@ -1,6 +1,6 @@
 # Listening Map
 
-A browser tool for analyzing recorded music on a timeline. Students map form in nested levels, mark cadences and other moments, track when instruments enter and exit, and write commentary tied to timestamps. Analyses export as a `.listening-map.json` file that can be re-opened in the tool, plus a plain text report.
+A browser tool for analyzing recorded music on a timeline. Students map form in nested levels, mark cadences and other moments, track when instruments enter and exit, and write commentary tied to timestamps. Analyses export as a `.listening-map.json` file that can be imported back into the tool.
 
 Each course gets its own **Google Apps Script web app**, the same way Theory Lab is set up: its own Google Sheet, its own Drive folder of submissions, and its own settings (name, instructors, label vocabulary, default theme). Students sign in with their school Google account and press **Submit**; instructors see every submission in the page and open any of them on the timeline. The page is no longer hosted on the personal website.
 
@@ -9,11 +9,15 @@ Each course gets its own **Google Apps Script web app**, the same way Theory Lab
 - **YouTube link**
 
 ## Workflow
-1. Load audio or a YouTube link.
+1. Load audio or a YouTube link (**Source**, at the right of the transport).
 2. While listening, press `S` at each boundary to split the active level.
 3. Select neighboring blocks and press `G` to group them on the level above.
 4. Label blocks, mark them auxiliary or elided, add markers (`M`) and instrument lanes.
-5. **Submit** (in a course), or export the analysis and hand in the `.json` file.
+5. **Submit** (in a course), or export the analysis (**Settings → Export analysis**) and hand in the `.json` file.
+
+**Settings** (top right) holds Import analysis, Export analysis, the theme, and the keyboard shortcuts. **Piece and grid** (title, composer, analyst, notes, and the measure grid) sits above the transport and folds away; the page remembers whether it is folded.
+
+Instrument lanes take a color and a texture (solid, stripes, dots, dashes, circles, lines, crosshatch, grid), so lanes stay distinct without relying on color alone.
 
 ## Zooming the timeline
 - **Trackpad:** pinch over the timeline (Chrome, Edge, Firefox, and Safari). The moment under the pointer stays put.
@@ -24,7 +28,7 @@ Each course gets its own **Google Apps Script web app**, the same way Theory Lab
 Zooming out stops at the whole piece in view.
 
 ## Themes
-Students choose a theme under **Look** (kept on their device) and Light, Dark, or System. The course file sets the default and which themes are offered.
+Students choose a theme under **Settings → Theme** (kept on their device) and Light, Dark, or System. The course file sets the default and which themes are offered.
 
 | Theme | Look |
 |---|---|
@@ -46,7 +50,7 @@ One file per course in `courses/`. Two examples are included: `theory-example.js
 | `ACCESS` | Who can open the web app: `DOMAIN` (your school, the default), `ANYONE` (any Google account), `ANYONE_ANONYMOUS` (no sign-in; submitting is then off), `MYSELF`. |
 | `SUBMIT` | `false` hides Submit; students export files instead. |
 | `THEME`, `THEMES` | The default theme, and the themes students may choose from. |
-| `VOCAB` | Label suggestion groups: `Song form`, `Classical form`, `Phrase and theme`, `Production`, or your own `{"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}`. |
+| `VOCAB` | Label suggestion groups: `Letters`, `Song form`, `Classical form`, `Phrase and theme`, `Production`, or your own `{"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}`. `Letters` (A to F, a to f) always comes first unless the course lists it somewhere else. |
 | `MARKER_CHIPS` | Quick labels for markers (for example `PAC`, `HC`, or `Drop`, `Riser`). |
 | `LEVEL_NAMES` | Names for new levels, bottom up (for example `Phrases`, `Sections`, `Large form`). |
 | `WELCOME` | Optional text for the banner over the example analysis. |

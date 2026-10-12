@@ -46,9 +46,8 @@ header.top { border-bottom: 2px solid var(--fg); padding-bottom: 10px; }
 .btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
 .play { background: var(--fg); color: var(--bg); border-radius: 50%; }
 .readout { font-family: var(--mono); }
-.tabs { border-bottom: 1px solid var(--fg); }
-.tab { font-family: var(--display); font-size: 15px; font-weight: 600; }
-.tab[aria-selected=true] { border-bottom-color: var(--accent); color: var(--fg); }
+.menu { border-radius: 2px; border-color: var(--fg); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.mi { font-family: var(--display); font-size: 15px; border-radius: 1px; }
 .chip { border-radius: 2px; font-family: var(--display); font-size: 13.5px; background: transparent; }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .sw { border-radius: 50%; }

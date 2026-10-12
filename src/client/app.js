@@ -4,18 +4,21 @@ const CFG = typeof CONFIG === 'object' && CONFIG ? CONFIG : {};
 const TIER_NAMES = Array.isArray(CFG.LEVEL_NAMES) && CFG.LEVEL_NAMES.length ? CFG.LEVEL_NAMES : ['Phrases','Sections','Large form'];
 const MK_KINDS = {cadence:['C','Cadence'],modulation:['M','Modulation'],climax:['!','Climax'],texture:['T','Texture change'],elision:['E','Elision'],other:['•','Other']};
 // Label suggestions. A course file picks groups by name ("VOCAB": ["Song form", "Production"]) or adds its own
-// ({"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}).
+// ({"name": "Fugue", "words": ["Subject", "Answer", "Episode"]}). Letters always come first unless the course places them.
 const VOCAB_LIBRARY = [
+  ['Letters',['A','B','C','D','E','F','a','b','c','d','e','f']],
   ['Song form',['Intro','Verse','Pre-chorus','Chorus','Post-chorus','Bridge','Break','Solo','Outro','Refrain']],
-  ['Classical form',['A','B','C','A′','Exposition','Transition','Development','Retransition','Recapitulation','Coda','Theme','Variation']],
+  ['Classical form',['Exposition','Transition','Development','Retransition','Recapitulation','Coda','Theme','Variation']],
   ['Phrase and theme',['Presentation','Continuation','Antecedent','Consequent','Basic idea','Cadential','Sentence','Period']],
   ['Production',['Intro','Build','Drop','Breakdown','Hook','Riser','Fill','Turnaround','Interlude','Outro']]
 ];
-const VOCAB = Array.isArray(CFG.VOCAB) && CFG.VOCAB.length
+const VOCAB = (groups => groups.some(g => g[0] === 'Letters') ? groups : [VOCAB_LIBRARY[0], ...groups])(Array.isArray(CFG.VOCAB) && CFG.VOCAB.length
   ? CFG.VOCAB.map(v => typeof v === 'string' ? VOCAB_LIBRARY.find(g => g[0] === v) : v && Array.isArray(v.words) ? [String(v.name || ''), v.words.map(String)] : null).filter(Boolean)
-  : VOCAB_LIBRARY.slice(0, 3);
+  : VOCAB_LIBRARY.slice(1, 4));
 const MARKER_CHIPS = Array.isArray(CFG.MARKER_CHIPS) && CFG.MARKER_CHIPS.length ? CFG.MARKER_CHIPS.map(String) : ['PAC','IAC','HC','DC','PC','V:HC','to V','to vi','Climax','Retransition'];
 const SYMBOLS = ['⁒','➚','➙','➘','′','″'];
+// Fill patterns for instrument lanes, so lanes can be told apart by more than color.
+const TEXTURES = ['solid','stripes','dots','dashes','circles','lines','crosshatch','grid'];
 const EPS = 1e-6;
 // True when the page is served by a course's Apps Script web app (google.script.run is there).
 const IN_COURSE_FRAME = !!(window.google && google.script && google.script.run);
@@ -267,10 +270,10 @@ function renderTimeline(){
   h += `<div class="row r-wave"><div class="lab">Audio</div><div class="trk" data-k="wave" style="width:${W}px"><canvas id="wv"></canvas>${!peaks && waveMsg ? `<span class="wavemsg" style="position:absolute">${esc(waveMsg)}</span>` : ''}</div></div>`;
   for (const ins of S.instruments){
     const isel = sel && sel.kind === 'inst' && sel.id === ins.id;
-    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="dot c-${ins.color}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
+    h += `<div class="row r-inst"><div class="lab click${isel ? ' sel' : ''}" data-k="instlab" data-id="${ins.id}"><span class="txkey c-${ins.color} tx-${ins.texture || 'solid'}"></span>${esc(ins.name)}</div><div class="trk" data-k="itrk" data-id="${ins.id}" style="width:${W}px">`;
     for (const s of ins.spans){
       const on = sel && sel.kind === 'ispan' && sel.id === s.id;
-      h += `<div class="is c-${ins.color}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
+      h += `<div class="is c-${ins.color} tx-${ins.texture || 'solid'}${on ? ' sel' : ''}${s.comment ? ' hc' : ''}" data-k="is" data-inst="${ins.id}" data-id="${s.id}" style="left:${s.start * pps}px;width:${Math.max(2, (s.end - s.start) * pps)}px" title="${esc(ins.name + ': ' + fmt(s.start) + ' to ' + fmt(s.end))}"><i class="ih l" data-k="ih" data-side="l" data-inst="${ins.id}" data-id="${s.id}"></i><i class="ih r" data-k="ih" data-side="r" data-inst="${ins.id}" data-id="${s.id}"></i></div>`;
     }
     h += `</div></div>`;
   }
@@ -299,6 +302,7 @@ const countTouches = e => { touchesDown = e.touches.length; if (!touchesDown){ c
 function placePH(){ const ph = $('#ph'); if (ph) ph.style.left = (gut() + P.t() * pps) + 'px'; }
 
 /* ---------- rendering: inspector ---------- */
+function textures(cur, color){ return `<div class="swatches">${TEXTURES.map(t => `<button class="sw txsw c-${color} tx-${t}${t === cur ? ' on' : ''}" data-act="texture" data-t="${t}" type="button" aria-label="${t}" title="${t[0].toUpperCase() + t.slice(1)}"></button>`).join('')}</div>`; }
 function swatches(cur){ return `<div class="swatches">${COLORS.map(c => `<button class="sw c-${c}${c === cur ? ' on' : ''}" data-act="color" data-c="${c}" type="button" aria-label="${c}"></button>`).join('')}</div>`; }
 function timesLine(a, b){ const bars = S.grid.on ? ` · ${mbar(a)} to ${mbar(b)}` : ''; return `${fmt(a)} to ${fmt(b)} · ${(b - a).toFixed(1)}s${bars}`; }
 function renderInspector(){
@@ -366,6 +370,7 @@ function renderInspector(){
     el.innerHTML = `<div class="stack"><div><div class="eyebrow">Instrument</div><h2>${esc(ins.name)}</h2><div class="meta">${ins.spans.length} ${ins.spans.length === 1 ? 'entry' : 'entries'} · drag across its lane to add more</div></div>
       <label class="field"><span>Name</span><input type="text" id="iLabel" value="${esc(ins.name)}" autocomplete="off"></label>
       <div class="field"><span>Color</span>${swatches(ins.color)}</div>
+      <div class="field"><span>Texture</span>${textures(ins.texture || 'solid', ins.color)}</div>
       <div class="actions"><button class="btn" data-act="enter" type="button">Enters at playhead</button><button class="btn" data-act="exit" type="button">Exits at playhead</button><button class="btn" data-act="rminst" type="button">Delete instrument</button></div></div>`;
     bindField($('#iLabel'), v => { ins.name = v; });
   } else if (sel.kind === 'ispan'){
@@ -388,7 +393,7 @@ function renderInspectorRO(el){
 function bindField(el, apply){
   if (!el) return; let prev = null;
   el.addEventListener('focus', () => { prev = snapshot(); });
-  el.addEventListener('input', () => { if (presenting) return; apply(el.value); renderTimeline(); renderComments(); updateDocTitle(); });
+  el.addEventListener('input', () => { if (presenting) return; apply(el.value); renderTimeline(); renderComments(); updateDocTitle(); updatePieceSummary(); });
   el.addEventListener('change', () => { if (prev && prev !== snapshot()) commit(prev); prev = snapshot(); });
 }
 $('#insp').addEventListener('click', e => {
@@ -400,6 +405,7 @@ $('#insp').addEventListener('click', e => {
     if (sel.kind === 'span') selSpans().forEach(s => s.color = b.dataset.c);
     else if (sel.kind === 'inst') S.instruments.find(i => i.id === sel.id).color = b.dataset.c;
   });
+  if (a === 'texture') return edit(() => { S.instruments.find(i => i.id === sel.id).texture = b.dataset.t; });
   if (a === 'vocab') return edit(() => { target().label = b.dataset.w; });
   if (a === 'sym') return edit(() => { const t = target(); t.label = (t.label || '') + b.dataset.w; });
   if (a === 'group') return cmdGroup();
@@ -437,31 +443,34 @@ function renderComments(){
   walk(S.tiers.length - 1, 0, dur() + 1, 0);
   for (const m of S.markers) if (m.comment) out.push({t: m.time, depth: 0, head: (m.label || MK_KINDS[m.kind][1]), sub: 'Marker · ' + fmt(m.time) + (S.grid.on ? ' · ' + mpos(m.time) : ''), body: m.comment, mk: MK_KINDS[m.kind][0]});
   for (const i of S.instruments) for (const s of i.spans) if (s.comment) out.push({t: s.start, depth: 0, head: i.name, sub: 'Instrument · ' + fmt(s.start) + ' to ' + fmt(s.end), body: s.comment, c: i.color});
-  const el = $('#tab-comments');
+  const el = $('#comments');
   el.innerHTML = out.length ? out.map(o => `<button class="cm" data-seek="${o.t}" style="--d:${o.depth}" type="button"><div class="cm-h">${o.mk ? `<span class="mk-g">${o.mk}</span>` : `<span class="dot c-${o.c}"></span>`}${esc(o.head)} <span class="meta">${esc(o.sub)}</span></div><div class="cm-b">${esc(o.body).replace(/\n/g, '<br>')}</div></button>`).join('')
     : `<p class="note">No commentary yet. Select any block, marker, or instrument entry and write in its Commentary box. It collects here in formal order, larger sections first.</p>`;
 }
-$('#tab-comments').addEventListener('click', e => { const b = e.target.closest('[data-seek]'); if (b){ P.seek(+b.dataset.seek); scrollTo(+b.dataset.seek); } });
+$('#comments').addEventListener('click', e => { const b = e.target.closest('[data-seek]'); if (b){ P.seek(+b.dataset.seek); scrollTo(+b.dataset.seek); } });
 
 function renderInfo(){
-  const el = $('#tab-info'), g = S.grid, ro = presenting ? ' disabled' : '';
-  el.innerHTML = `<div class="stack">
-    <div class="row2">
-      <label class="field"><span>Title</span><input type="text" id="mTitle" value="${esc(S.meta.title)}"${ro}></label>
-      <label class="field"><span>Composer or artist</span><input type="text" id="mComposer" value="${esc(S.meta.composer)}"${ro}></label>
+  const el = $('#pieceBody'), g = S.grid, ro = presenting ? ' disabled' : '';
+  el.innerHTML = `<div class="piecegrid">
+    <div class="stack">
+      <div class="row3">
+        <label class="field"><span>Title</span><input type="text" id="mTitle" value="${esc(S.meta.title)}"${ro}></label>
+        <label class="field"><span>Composer or artist</span><input type="text" id="mComposer" value="${esc(S.meta.composer)}"${ro}></label>
+        <label class="field"><span>Analyst (student name)</span><input type="text" id="mStudent" value="${esc(S.meta.student)}"${ro}></label>
+      </div>
+      <label class="field"><span>Overall notes</span><textarea id="mNotes" rows="2" placeholder="Summarize the form, e.g. verse and chorus form with a contrasting bridge."${ro}>${esc(S.meta.notes)}</textarea></label>
+      <div class="meta">Source: ${esc(S.source.type === 'youtube' ? 'YouTube ' + S.source.youtubeId : S.source.name)} · ${fmt(dur())}</div>
     </div>
-    <label class="field"><span>Analyst (student name)</span><input type="text" id="mStudent" value="${esc(S.meta.student)}"${ro}></label>
-    <label class="field"><span>Overall notes</span><textarea id="mNotes" placeholder="Summarize the form, e.g. verse and chorus form with a contrasting bridge."${ro}>${esc(S.meta.notes)}</textarea></label>
-    <div class="meta">Source: ${esc(S.source.type === 'youtube' ? 'YouTube ' + S.source.youtubeId : S.source.name)} · ${fmt(dur())}</div>
-    <div><div class="eyebrow">Measure grid</div><p class="note" style="margin:2px 0 8px">Turn this on to count in measures instead of seconds. Set the tempo and where m. 1 begins.</p>
-      <div class="checks" style="margin-bottom:10px"><label class="toggle"><input type="checkbox" id="gOn"${g.on ? ' checked' : ''}${ro}> Show measures</label></div>
-      <div class="row2">
+    <div class="stack gridset"><div><div class="eyebrow">Measure grid</div><p class="note" style="margin:2px 0 0">Count in measures instead of seconds. Set the tempo and where m. 1 begins.</p></div>
+      <label class="toggle"><input type="checkbox" id="gOn"${g.on ? ' checked' : ''}${ro}> Show measures</label>
+      <div class="row3">
         <label class="field"><span>Tempo (BPM)</span><input type="number" id="gBpm" min="20" max="320" step="0.1" value="${g.bpm}"${ro}></label>
         <label class="field"><span>Beats per measure</span><input type="number" id="gBpb" min="1" max="16" step="1" value="${g.bpb}"${ro}></label>
         <label class="field"><span>m. 1 starts at (sec)</span><input type="number" id="gOff" min="0" step="0.01" value="${g.offset}"${ro}></label>
       </div>
-      <div class="actions edit-only" style="margin-top:8px"><button class="btn" id="gTap" type="button">Tap tempo</button><button class="btn" id="gHere" type="button">Start m. 1 at playhead</button></div>
+      <div class="actions edit-only"><button class="btn sm" id="gTap" type="button">Tap tempo</button><button class="btn sm" id="gHere" type="button">Start m. 1 at playhead</button></div>
     </div></div>`;
+  updatePieceSummary();
   if (presenting) return;
   bindField($('#mTitle'), v => { S.meta.title = v; });
   bindField($('#mComposer'), v => { S.meta.composer = v; });
@@ -479,13 +488,14 @@ function renderInfo(){
     $('#gTap').textContent = taps.length < 3 ? 'Keep tapping…' : 'Tap tempo (' + S.grid.bpm + ')';
   };
 }
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t));
-  ['comments', 'info', 'keys'].forEach(n => $('#tab-' + n).hidden = n !== t.dataset.tab);
-});
+// The collapsed panel still shows what the piece is and how the grid is set.
+function updatePieceSummary(){
+  const g = S.grid;
+  $('#pieceSum').textContent = [[S.meta.title, S.meta.composer].filter(Boolean).join(', '), g.on ? `${g.bpm} BPM, ${g.bpb} beats per measure` : 'Measure grid off'].filter(Boolean).join(' · ');
+}
 
 function updateDocTitle(){ $('#docTitle').textContent = [S.meta.title, S.meta.composer].filter(Boolean).join(' · '); }
-function renderAll(){ validateSel(); renderTimeline(); renderInspector(); renderComments(); updateDocTitle(); $('#snap').checked = !!S.grid.snap; $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; }
+function renderAll(){ validateSel(); renderTimeline(); renderInspector(); renderComments(); updateDocTitle(); updatePieceSummary(); $('#snap').checked = !!S.grid.snap; $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; }
 
 /* ---------- pointer interaction ---------- */
 function tAt(ev){ return clamp((ev.clientX - inner.getBoundingClientRect().left - gut()) / pps, 0, dur()); }
@@ -559,7 +569,7 @@ inner.addEventListener('dblclick', e => { if (e.target.closest('.sp, .mk')) focu
 inner.addEventListener('click', e => {
   const b = e.target.closest('[data-k="addinst"],[data-k="addlevel"]'); if (!b) return;
   if (b.dataset.k === 'addinst') edit(() => {
-    const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], spans: []};
+    const n = S.instruments.length; const ins = {id: uid(), name: 'Instrument ' + (n + 1), color: COLORS[(n * 3 + 4) % COLORS.length], texture: TEXTURES[n % TEXTURES.length], spans: []};
     S.instruments.push(ins); sel = {kind: 'inst', id: ins.id};
   });
   else edit(() => { const k = S.tiers.length; S.tiers.push([mk(0, dur())]); S.tierNames[k] = TIER_NAMES[k] || 'Level ' + (k + 1); sel = {kind: 'tier', tier: k}; });
@@ -669,7 +679,7 @@ document.addEventListener('keydown', e => {
     case '+': case '=': zoom(1.5); break;
     case '-': case '_': zoom(1 / 1.5); break;
     case '0': fit(); renderTimeline(); break;
-    case 'Escape': sel = null; renderAll(); break;
+    case 'Escape': if (!$('#menu').hidden) showMenu(false); else { sel = null; renderAll(); } break;
   }
 });
 
@@ -702,12 +712,13 @@ async function attachAudioFile(f, fresh){
     S.source.name = f.name; pendingAudio = null; hideBanner(); renderAll();
   }
 }
-$('#bYT').onclick = () => { $('#ytPop').hidden = !$('#ytPop').hidden; if (!$('#ytPop').hidden) $('#ytUrl').focus(); };
-$('#ytCancel').onclick = () => { $('#ytPop').hidden = true; };
+const showYT = on => { $('#ytPop').hidden = !on; $('#bYT').setAttribute('aria-expanded', on); if (on) $('#ytUrl').focus(); };
+$('#bYT').onclick = () => showYT($('#ytPop').hidden);
+$('#ytCancel').onclick = () => showYT(false);
 $('#ytPop').onsubmit = e => {
   e.preventDefault();
   const id = ytId($('#ytUrl').value); if (!id){ toast('That does not look like a YouTube link.'); return; }
-  $('#ytPop').hidden = true; pendingAudio = null; hideBanner();
+  showYT(false); pendingAudio = null; hideBanner();
   useYouTube(id, (d, title) => startNew({type: 'youtube', youtubeId: id, name: title || 'YouTube ' + id, duration: d || 1}));
 };
 $('#fOpen').onchange = async e => {
@@ -753,26 +764,26 @@ $('#copyGo').onclick = async () => {
 };
 $('#copyClose').onclick = () => { const d = $('#copyBox'); if (d.close) d.close(); else d.removeAttribute('open'); };
 $('#bExport').onclick = () => offerFile(baseName() + '.listening-map.json', JSON.stringify(S, null, 2));
-$('#bReport').onclick = () => offerFile(baseName() + '.txt', report());
-function report(){
-  const L = [], range = (a, b) => fmt(a) + ' to ' + fmt(b) + (S.grid.on ? ` (${mbar(a)} to ${mbar(b)})` : '');
-  L.push('LISTENING MAP ANALYSIS', '');
-  L.push('Title: ' + (S.meta.title || ''), 'Composer/artist: ' + (S.meta.composer || ''), 'Analyst: ' + (S.meta.student || ''));
-  L.push('Source: ' + (S.source.type === 'youtube' ? 'https:\/\/youtu.be/' + S.source.youtubeId : S.source.name) + ' (' + fmt(dur()) + ')');
-  if (S.grid.on) L.push(`Measure grid: ${S.grid.bpm} BPM, ${S.grid.bpb} beats per measure, m. 1 at ${S.grid.offset}s`);
-  if (S.meta.notes) L.push('', 'OVERALL NOTES', S.meta.notes);
-  for (let k = S.tiers.length - 1; k >= 0; k--){
-    L.push('', (S.tierNames[k] || 'Level ' + (k + 1)).toUpperCase() + ' (level ' + (k + 1) + ')');
-    for (const s of S.tiers[k]){
-      const flags = [s.aux && 'auxiliary', s.elide && 'elided'].filter(Boolean).join(', ');
-      L.push('  ' + range(s.start, s.end) + '  ' + (s.label || '(unlabeled)') + (flags ? ' [' + flags + ']' : ''));
-      if (s.comment) L.push(...s.comment.split('\n').map(x => '      ' + x));
-    }
-  }
-  if (S.markers.length){ L.push('', 'MARKERS'); for (const m of S.markers){ L.push('  ' + fmt(m.time) + (S.grid.on ? ' (' + mpos(m.time) + ')' : '') + '  ' + MK_KINDS[m.kind][1] + (m.label ? ': ' + m.label : '')); if (m.comment) L.push(...m.comment.split('\n').map(x => '      ' + x)); } }
-  if (S.instruments.length){ L.push('', 'INSTRUMENTATION'); for (const i of S.instruments){ L.push('  ' + i.name); for (const s of i.spans){ L.push('    ' + range(s.start, s.end)); if (s.comment) L.push('      ' + s.comment); } } }
-  return L.join('\n') + '\n';
-}
+// Whether the Piece and grid panel is folded is kept on this device.
+try { if (localStorage.getItem('listeningmap.piece') === 'closed') $('#piece').open = false; } catch(e){}
+$('#piece').addEventListener('toggle', () => { try { localStorage.setItem('listeningmap.piece', $('#piece').open ? 'open' : 'closed'); } catch(e){} });
+
+/* ---------- settings menu ---------- */
+// The Settings menu holds what is used now and then: files, the look, and the shortcut list.
+function showMenu(on){ $('#menu').hidden = !on; $('#bMenu').setAttribute('aria-expanded', on); if (on) $('#menu .mi').focus(); }
+$('#bMenu').onclick = () => showMenu($('#menu').hidden);
+$('#menu').addEventListener('click', e => { if (e.target.closest('.mi')) showMenu(false); });
+$('#menu').addEventListener('keydown', e => {
+  const items = [...document.querySelectorAll('#menu .mi')], i = items.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+  else if (e.key === 'Escape'){ e.stopPropagation(); showMenu(false); $('#bMenu').focus(); }
+  else if (e.key === 'Tab') showMenu(false);
+});
+document.addEventListener('pointerdown', e => { if (!$('#menu').hidden && !e.target.closest('.menuwrap')) showMenu(false); });
+$('#bImport').onclick = () => $('#fOpen').click();
+const showKeys = on => { $('#keysPop').hidden = !on; $('#bKeys').setAttribute('aria-expanded', on); };
+$('#bKeys').onclick = () => showKeys($('#keysPop').hidden);
+$('#keysClose').onclick = () => showKeys(false);
 
 /* ---------- banner, toast ---------- */
 function showBanner(html){ const b = $('#banner'); b.innerHTML = html; b.hidden = false; }
@@ -861,10 +872,10 @@ function demoState(){
       {id: uid(), time: 70, label: 'PAC', kind: 'cadence', comment: ''}
     ],
     instruments: [
-      {id: uid(), name: 'Pad', color: 'slate', spans: [{id: uid(), start: 0, end: 80, comment: 'Sustained triads throughout.'}]},
-      {id: uid(), name: 'Bass', color: 'blue', spans: [{id: uid(), start: 8, end: 80, comment: ''}]},
-      {id: uid(), name: 'Drums', color: 'rose', spans: [{id: uid(), start: 8, end: 72, comment: ''}]},
-      {id: uid(), name: 'Lead', color: 'amber', spans: [{id: uid(), start: 24, end: 40, comment: 'Arpeggiates the chord tones in eighth notes.'}, {id: uid(), start: 56, end: 72, comment: ''}]}
+      {id: uid(), name: 'Pad', color: 'slate', texture: 'solid', spans: [{id: uid(), start: 0, end: 80, comment: 'Sustained triads throughout.'}]},
+      {id: uid(), name: 'Bass', color: 'blue', texture: 'stripes', spans: [{id: uid(), start: 8, end: 80, comment: ''}]},
+      {id: uid(), name: 'Drums', color: 'rose', texture: 'dots', spans: [{id: uid(), start: 8, end: 72, comment: ''}]},
+      {id: uid(), name: 'Lead', color: 'amber', texture: 'circles', spans: [{id: uid(), start: 24, end: 40, comment: 'Arpeggiates the chord tones in eighth notes.'}, {id: uid(), start: 56, end: 72, comment: ''}]}
     ]};
 }
 
