@@ -1,0 +1,14 @@
+{
+  "id": "theory-fa26",
+  "scriptId": "1sA5-IxLSEOsirpmLSqN4DEG_ZtEfRwkOaHrR3nASigS0JmPmPpD1rgJa",
+  "deploymentId": "AKfycbwaHmwm1IhJvfLLEiwFEWBJJM8OyeQogphhXScPtV4v7fXeADgEAn9UQawtC57v27Kjgg",
+  "COURSE": "AMU 101 Fall 2026",
+  "TEACHERS": ["chandlec@union.edu"],
+  "ACCESS": "DOMAIN",
+  "SUBMIT": true,
+  "THEME": "keycap",
+  "THEMES": ["keycap", "score", "studio", "tapedeck"],
+  "VOCAB": ["Classical form", "Phrase and theme", "Song form"],
+  "MARKER_CHIPS": ["PAC", "IAC", "HC", "DC", "PC", "V:HC", "to V", "to vi", "Climax", "Retransition"],
+  "LEVEL_NAMES": ["Phrases", "Sections", "Large form"]
+}
