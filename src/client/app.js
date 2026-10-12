@@ -1158,8 +1158,6 @@ function openExample(id, welcome){
   if (ex === 'demo') loadDemoAudio(); else useYouTube(S.source.youtubeId);
   showBanner(esc(welcome && CFG.WELCOME || EXAMPLES[ex].banner));
 }
-// The example analyses can't be submitted; students start their own.
-const isExample = () => S.source.type === 'demo' || !!S.source.example;
 const exItems = Object.entries(EXAMPLES).filter(([, e]) => e.ready());
 $('#exampleItems').hidden = exItems.length < 2;
 $('#exampleList').innerHTML = exItems.map(([id, e]) => `<button class="mi" type="button" role="menuitem" data-ex="${id}">${esc(e.name)}</button>`).join('');
@@ -1173,4 +1171,3 @@ let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(ren
 // A new look changes the waveform color and may change the label gutter, so redraw the timeline.
 onLookChange = () => { if (S) renderTimeline(); };
 initLookPicker();
-initCourse();

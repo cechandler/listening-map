@@ -50,8 +50,7 @@ for (const c of courses) test(`builds ${c}`, () => {
   const course = JSON.parse(fs.readFileSync(path.join(root, `courses/${c}.json`), "utf8"));
   assert.ok(!html.includes("@@"), "every placeholder is filled");
   assert.ok(html.indexOf("const CONFIG") < html.indexOf("const LOOKS"), "config loads before looks");
-  assert.ok(!html.includes("MOCK_SERVER = "), "the live page has no stand-in server");
-  assert.ok(fs.readFileSync(path.join(r.out, "preview.html"), "utf8").includes("MOCK_SERVER = "));
+  assert.ok(!/Submit to your instructor|Student submissions/.test(html), "the page has no Submit or Submissions");
   for (const t of themeIds().slice(1)) assert.ok(html.includes(`:root[data-skin="${t}"]`), t);
   const manifest = JSON.parse(fs.readFileSync(path.join(r.gas, "appsscript.json"), "utf8"));
   assert.equal(manifest.webapp.access, course.ACCESS || "DOMAIN");

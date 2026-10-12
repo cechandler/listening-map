@@ -45,7 +45,7 @@ body {
 .brand h1::after { content: ""; display: block; height: 3px; margin-top: 2px; border-radius: 3px; background: var(--accent); transform: rotate(1deg); }
 .brand .doc { font-family: var(--display); font-size: 16px; }
 .card h2, .lookhead h2, .pop h2, .ro-label, .lookname { font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: 0; }
-.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .subt th, .mlabel, .srow > span, .keys th {
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .mlabel, .srow > span, .keys th {
   font-family: var(--display); font-size: 14px; letter-spacing: 0.02em; text-transform: none; font-weight: 700;
 }
 .eyebrow::after { content: ":"; }
@@ -113,7 +113,7 @@ kbd { font: 700 11px var(--mono); border: 1.5px solid var(--ink); border-bottom-
 .cm { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
 .cm-h { font: 700 16px var(--display); }
 .cmpill { border-radius: var(--wob); }
-.keys td, .subt td { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 20%, transparent); }
+.keys td { border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 20%, transparent); }
 .mi { font: 700 14.5px var(--ui); border-radius: var(--wob); }
 .menu hr { border-top: 1.5px dashed var(--line); }
 .bigclock { background: var(--surface); color: var(--fg); border: 2.5px solid var(--ink); border-radius: var(--wob-lg); box-shadow: none; }

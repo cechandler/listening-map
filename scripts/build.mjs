@@ -1,6 +1,6 @@
 // Build one course: node scripts/build.mjs --course theory-example     (or --all for every file in courses/)
 // Writes dist/<course>/appsscript/ (pushed to Apps Script with clasp) and dist/<course>/preview.html (open it in a
-// browser; a stand-in plays the server, so Submit and Submissions work without saving anything).
+// browser).
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
@@ -101,9 +101,8 @@ export function build(courseId) {
   const themeCss = themeIds().slice(1).map(t => `/* ---- theme: ${t} ---- */\n` + scopeCss(read(`src/client/themes/${t}.css`), t)).join("\n");
   const styles = read("src/client/styles.css") + "\n" + themeCss;
   const looks = read("src/client/looks.js");
-  const page = ["course.js", "app.js"].map(f => `// ---- ${f} ----\n` + read("src/client/" + f)).join("\n");
-  const mock = read("src/client/preview-mock.js");
-  for (const [n, s] of [["looks.js", looks], ["page code", page], ["preview-mock.js", mock]]) checkPageCode(n, s);
+  const page = read("src/client/app.js");
+  for (const [n, s] of [["looks.js", looks], ["page code", page]]) checkPageCode(n, s);
   const ids = [...looks.matchAll(/\{id: '([a-z]+)'/g)].map(m => m[1]).sort().join();
   if (ids !== themeIds().slice().sort().join()) throw new Error(`looks.js lists themes ${ids}, but the theme files are ${themeIds().join()}`);
 
@@ -121,7 +120,7 @@ export function build(courseId) {
   fs.writeFileSync(path.join(gas, "appsscript.json"), JSON.stringify(manifest, null, 2) + "\n");
   fs.writeFileSync(path.join(gas, "Index.html"), html(`<script>\n${page}</script>`));
   if (scriptId) fs.writeFileSync(path.join(gas, ".clasp.json"), JSON.stringify({ scriptId, rootDir: "." }, null, 2) + "\n");
-  fs.writeFileSync(path.join(out, "preview.html"), html(`<script>\n${mock}</script>\n<script>\n${page}</script>`));
+  fs.writeFileSync(path.join(out, "preview.html"), html(`<script>\n${page}</script>`));
   return { out, gas, scriptId, deploymentId, version: cfg.VERSION };
 }
 

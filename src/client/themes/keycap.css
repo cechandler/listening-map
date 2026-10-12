@@ -41,7 +41,7 @@ textarea:focus-visible, .lookcard:focus-visible { outline: 3px solid var(--fg); 
 
 /* Headings and labels */
 .card h2, .lookhead h2, .pop h2, .ro-label { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.2rem; }
-.eyebrow, .grp .lbl, .presentpill, .brand .course, .subt th, .field > span, .mlabel, .srow > span { font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; font-size: 0.7rem; }
+.eyebrow, .grp .lbl, .presentpill, .brand .course, .field > span, .mlabel, .srow > span { font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; font-size: 0.7rem; }
 .field > span { color: var(--muted); }
 .meta { font-family: var(--mono); }
 
@@ -166,8 +166,6 @@ kbd { font: 500 11px var(--mono); background: var(--surface); border: 1px solid 
 .cm-h { font-family: var(--display); letter-spacing: -0.01em; font-size: 14px; }
 .cm:hover .cm-h { color: var(--accent); }
 .keys td { border-bottom: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); }
-.subt th { border-bottom: 2px solid var(--edge); }
-.subt td { border-bottom: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); }
 .ro-label { font-size: 1.5rem; }
 
 /* Look cards are bento too. */

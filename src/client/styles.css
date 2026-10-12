@@ -233,13 +233,13 @@ body.present .transport{border-color:color-mix(in srgb,var(--accent) 45%,var(--l
 body.present .bnd,body.present .ih{display:none}
 .presentpill{display:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:600}
 body.present .presentpill{display:inline}
-/* course name, Look picker, submit, submissions, copy box */
+/* course name, Look picker, copy box */
 .brand .course{font:500 11px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .brand .course:empty{display:none}
 .lookhead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 16px;width:100%}
 .lookhead>div:first-child{flex:1 1 auto}
 .lookhead h2,.pop h2{font:600 15px/1.2 var(--display);margin:0}
-.pop.look,.pop.submit,.pop.keyspop{display:grid;gap:10px}
+.pop.look,.pop.keyspop{display:grid;gap:10px}
 .pop[hidden]{display:none!important}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;background:var(--surface);padding:6px 10px;cursor:pointer;font-size:12.5px}
@@ -255,16 +255,6 @@ body.present .presentpill{display:inline}
 .lookswatch i:nth-child(2){background:var(--lk-acc)}.lookswatch i:nth-child(3){background:var(--lk-2)}.lookswatch i:nth-child(4){background:var(--lk-ink)}
 .lookname{font-weight:600}
 .lookblurb{font-size:12px;color:var(--muted)}
-.subs{display:grid;gap:12px}
-.subform,.subdone{display:grid;gap:10px}
-.subdone p{margin:0}
-.subwhat{display:grid;gap:4px;font-size:13px;border-left:3px solid var(--line);padding:2px 0 2px 10px}
-.subwhat span{color:var(--muted);display:inline-block;min-width:80px}
-#subMine:empty{display:none}
-.subwrap{overflow-x:auto}
-.subt{width:100%;border-collapse:collapse;font-size:13px}
-.subt th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1px solid var(--line);padding:6px 10px 6px 0}
-.subt td{border-bottom:1px solid var(--line);padding:7px 10px 7px 0;vertical-align:top}
 .copybox{max-width:min(640px,calc(100% - 32px));width:100%;color:var(--fg)}
 .copybox::backdrop{background:rgba(0,0,0,.35)}
 .copybox textarea{width:100%;font:12px var(--mono);border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:8px;margin:8px 0}

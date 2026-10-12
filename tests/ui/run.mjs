@@ -41,7 +41,7 @@ await step("boots with the course's default theme and course name", async () => 
 await step("the course's example opens first, and Settings lists both examples", async () => {
   const ep = await open("", { keepExample: true });
   const want = (await ep.evaluate(() => CONFIG.EXAMPLE)) || "demo";
-  const s = await ep.evaluate(() => ({ title: S.meta.title, example: isExample(), levels: S.tiers.length, markers: S.markers.map(m => m.label) }));
+  const s = await ep.evaluate(() => ({ title: S.meta.title, example: S.source.type === "demo" || !!S.source.example, levels: S.tiers.length, markers: S.markers.map(m => m.label) }));
   if (want === "k545") {
     assert.match(s.title, /K\. 545/);
     assert.equal(s.levels, 3);
@@ -316,48 +316,17 @@ await step("the chosen theme is remembered on reload", async () => {
   assert.equal(await page.evaluate(() => document.documentElement.dataset.skin), "studio");
 });
 
-await step("instructor: submit, list, and open a submission from the Settings menu", async () => {
-  assert.equal(await page.locator("header .tools > #bSubmit, header .tools > #bSubs").count(), 0, "not in the header bar");
+await step("Settings has no Submit or Student submissions", async () => {
   await page.click("#bMenu");
-  await page.waitForSelector("#bSubs:not([hidden])");
-  assert.ok(await page.isVisible("#bSubmit"));
+  const items = await page.locator("#menu .mi").allTextContents();
+  assert.ok(!items.some(t => /Submit|submissions/.test(t)), items.join(", "));
   await page.keyboard.press("Escape");
-  await page.evaluate(() => { S.source = { type: "file", name: "piece.mp3", duration: 80 }; S.meta.title = "Test piece"; });
-  await page.click("#bMenu"); await page.click("#bSubmit");
-  assert.match(await page.textContent("#subWhat"), /piece\.mp3 \(the file itself is not sent\)/);
-  await page.fill("#subName", "Ada Student");
-  await page.click("#subGo");
-  await page.waitForSelector("#subDone:not([hidden])");
-  assert.match(await page.textContent("#subDone"), /Your instructor has it/);
-  await page.click("#subCancel");
-  await page.click("#bMenu"); await page.click("#bSubs");
-  await page.waitForSelector("#subsList [data-sub]");
-  assert.match(await page.textContent("#subsList"), /Ada Student/);
-  await page.evaluate(() => { S.meta.title = "changed"; });
-  await page.click("#subsList [data-sub]");
-  await page.waitForFunction(() => S.meta.title === "Test piece");
-  assert.match(await page.textContent("#banner"), /Viewing Ada Student’s submission/);
-  await page.click("#subsBack");
-  assert.ok(await page.isVisible("#subsPanel"));
-  await page.click("#subsClose");
 });
 
 await step("export downloads the analysis", async () => {
   await page.click("#bMenu");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bExport")]);
   assert.match(dl.suggestedFilename(), /\.listening-map\.json$/);
-});
-
-await step("student view: Submit, no Submissions, and the demo can't be submitted", async () => {
-  const sp = await open("?as=student");
-  await sp.waitForSelector("#bSubmit:not([hidden])", { state: "attached" });
-  await sp.click("#bMenu");
-  assert.equal(await sp.isVisible("#bSubmit"), true);
-  assert.equal(await sp.isVisible("#bSubs"), false);
-  await sp.click("#bSubmit");
-  assert.equal(await sp.isDisabled("#subGo"), true, "the example analysis can't be sent");
-  assert.match(await sp.textContent("#subNote"), /example analysis/);
-  await sp.context().close();
 });
 
 await browser.close();

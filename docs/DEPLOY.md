@@ -22,23 +22,17 @@ Each course offering gets its own Google Sheet and Apps Script project in the in
 8. Link the Web app URL from your course site (Moodle, Canvas, Google Classroom, or a Google Site; it can also be embedded in a Google Site, since the page allows framing).
 
 ## Assignments
-The **Assignments** tab lists what students can submit for: a title in column A, and `no` in column B (Open) to stop taking submissions for it. Students pick one from a menu when they submit. With no rows, they submit without choosing. Changes take effect on the student's next page load; no redeploy.
-
-## Submissions
-Each submission is saved as a `.listening-map.json` file in the course's Drive folder and logged on the **Submissions** tab (who, when, assignment, piece, source, and counts of blocks, markers, and comments, with a link to the file). Students can submit more than once; every version is kept. In the page, instructors choose **Settings → Student submissions** to list them by assignment and **Open** any one on the timeline. Students see their own past submissions in the Submit dialog (**Settings → Submit to your instructor**) and can reopen them on another computer.
-
-For an audio-file analysis only the analysis is submitted, not the recording; open the same recording with **Open audio** to hear it. YouTube analyses play right away.
-
-The app finds the Submissions columns by their headers, so you can add your own columns (a Grade or Notes column, for example). Don't rename the existing headers.
 
 ## Several courses
 Repeat **Set up a course** for each one. Each has its own Sheet, folder, URL, and course file, so a theory section and a music technology section never see each other's work. `npm run build:all` builds every course; deploy each with its own `--course`.
 
 ## Who can open it
 `ACCESS` in the course file sets this:
-- `DOMAIN` (default): anyone signed in to your school's Google accounts. Submitting works.
-- `ANYONE`: any Google account. Apps Script only tells the server who is signed in when they're in your school's domain, so outside accounts can use the tool but can't submit.
-- `ANYONE_ANONYMOUS`: no sign-in at all; Submit is hidden and students export files.
+- `DOMAIN` (default): anyone signed in to your school's Google accounts.
+- `ANYONE`: any Google account.
+- `ANYONE_ANONYMOUS`: no sign-in at all.
+
+Students hand in work by exporting the analysis (**Settings → Export analysis**) and sending you the `.json` file; open it with **Settings → Import analysis**.
 
 ## Moving off the personal website
 The page used to be served from this repository's root `index.html` at christopherchandlermusic.com/listening-map/. That file is gone; the page is now built per course. To take the old address down completely, turn off GitHub Pages for this repository (**Settings > Pages > Build and deployment**: set Source to None, or unpublish). If the personal site links to the old page, point that link at a course's Web app URL or remove it.
