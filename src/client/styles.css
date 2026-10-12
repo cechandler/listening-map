@@ -1,7 +1,7 @@
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0}
 [hidden]{display:none!important}
-/* Layout: a tape-deck style transport over a horizontally scrolling multi-lane timeline; inspector and tabs below. */
+/* Layout: the piece panel and a tape-deck style transport over a horizontally scrolling multi-lane timeline; inspector and comments below. */
 :root{
   --bg:#eef0f3; --surface:#ffffff; --surface-2:#f5f6f8; --line:#d7dbe2; --fg:#181c24; --muted:#5b6474;
   --accent:#c2550f; --focus:#2f5fd0; --wave:#8a94a6; --grid:rgba(24,28,36,.07); --mk:#9b3d9e;
@@ -48,7 +48,26 @@ button,input,select,textarea{font:inherit;color:inherit}
 .pop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .pop input[type=text]{flex:1 1 280px;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .note{color:var(--muted);font-size:12.5px}
+.menuwrap{position:relative}
+.burger{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.menu{position:absolute;right:0;top:calc(100% + 8px);z-index:30;min-width:230px;display:grid;gap:2px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.mi{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13.5px;white-space:nowrap}
+.mi:hover,.mi:focus-visible{background:var(--surface-2);outline:none}
 .banner{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+
+/* piece and grid */
+.piece{padding:10px 16px}
+.piece>summary{display:flex;align-items:baseline;gap:10px;cursor:pointer;list-style:none;min-width:0}
+.piece>summary::-webkit-details-marker{display:none}
+.piece>summary::before{content:"";flex:none;align-self:center;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.piece[open]>summary::before{transform:rotate(45deg)}
+.piece[open]>summary{margin-bottom:10px}
+.piece>summary .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.piecegrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px 20px}
+.gridset{gap:8px;border-left:1px solid var(--line);padding-left:20px;align-content:start}
+.row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.piece .field textarea{min-height:52px}
 
 /* transport */
 .transport{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -57,6 +76,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .readout{font:500 20px/1 var(--mono);font-variant-numeric:tabular-nums;min-width:96px}
 .readout small{display:block;font:500 11px/1.4 var(--mono);color:var(--muted);letter-spacing:.02em;margin-top:3px}
 .grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.transport .src{margin-left:auto}
 .grp .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px}
 kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--surface-2);color:var(--muted)}
 .media{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
@@ -105,6 +125,18 @@ kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width
 .ih.l{left:-5px}.ih.r{right:-5px}
 .r-inst .trk{cursor:crosshair}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--cc);flex:none}
+/* Instrument textures: a pattern laid over the lane color (--tx is the pattern ink). */
+.txkey{position:relative;width:18px;height:11px;border-radius:3px;background:var(--cc);flex:none}
+.txsw{position:relative;overflow:hidden}
+.is,.txkey,.txsw{--tx:color-mix(in srgb,var(--surface) 72%,transparent)}
+.is::before,.txkey::before,.txsw::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+.tx-stripes::before{background:repeating-linear-gradient(135deg,var(--tx) 0 2px,transparent 2px 7px)}
+.tx-lines::before{background:repeating-linear-gradient(180deg,var(--tx) 0 1.5px,transparent 1.5px 5px)}
+.tx-dots::before{background:radial-gradient(circle,var(--tx) 0 1.6px,transparent 2px) 0 0/7px 7px}
+.tx-circles::before{background:radial-gradient(circle,transparent 0 2px,var(--tx) 2.4px 3.4px,transparent 3.8px) 0 0/10px 10px}
+.tx-dashes::before{background:linear-gradient(90deg,var(--tx) 0 5px,transparent 5px) 0 30%/10px 2px repeat-x,linear-gradient(90deg,var(--tx) 0 5px,transparent 5px) 5px 70%/10px 2px repeat-x}
+.tx-crosshatch::before{background:repeating-linear-gradient(45deg,var(--tx) 0 1.5px,transparent 1.5px 6px),repeating-linear-gradient(-45deg,var(--tx) 0 1.5px,transparent 1.5px 6px)}
+.tx-grid::before{background:linear-gradient(90deg,var(--tx) 0 1.5px,transparent 1.5px) 0 0/6px 6px,linear-gradient(180deg,var(--tx) 0 1.5px,transparent 1.5px) 0 0/6px 6px}
 .ph{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;z-index:3}
 .ph::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top:7px solid var(--accent)}
 .r-add .lab{flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding-block:6px}
@@ -134,9 +166,7 @@ canvas#wv{display:block;height:66px}
 .sw.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--fg)}
 .checks{display:flex;flex-wrap:wrap;gap:8px 18px}
 .actions{display:flex;flex-wrap:wrap;gap:6px}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-4px -4px 12px;padding:0 4px}
-.tab{border:0;background:none;padding:8px 10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
+#comments{margin-top:8px}
 .cm{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 0 8px calc(var(--d,0) * 16px);border-bottom:1px solid var(--line);cursor:pointer}
 .cm:last-child{border-bottom:0}
 .cm:hover .cm-h{color:var(--focus)}
@@ -160,7 +190,7 @@ body.present .presentpill{display:inline}
 .lookhead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 16px;width:100%}
 .lookhead>div:first-child{flex:1 1 auto}
 .lookhead h2,.pop h2{font:600 15px/1.2 var(--display);margin:0}
-.pop.look,.pop.submit{display:grid;gap:10px}
+.pop.look,.pop.submit,.pop.keyspop{display:grid;gap:10px}
 .pop[hidden]{display:none!important}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;background:var(--surface);padding:6px 10px;cursor:pointer;font-size:12.5px}
@@ -184,6 +214,6 @@ body.present .presentpill{display:inline}
 .copybox{max-width:min(640px,calc(100% - 32px));width:100%;color:var(--fg)}
 .copybox::backdrop{background:rgba(0,0,0,.35)}
 .copybox textarea{width:100%;font:12px var(--mono);border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:8px;margin:8px 0}
-@media (max-width:860px){.lower{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){.lower,.piecegrid{grid-template-columns:minmax(0,1fr)}.gridset{border-left:0;padding-left:0}.transport .src{margin-left:0}}
 @media (max-width:640px){:root{--gut:86px}.readout{font-size:17px;min-width:80px}.brand h1{font-size:19px}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}

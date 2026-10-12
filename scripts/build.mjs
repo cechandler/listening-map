@@ -10,7 +10,7 @@ const read = p => fs.readFileSync(path.join(root, p), "utf8");
 const arg = (name, d) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : d; };
 
 export const ACCESS = ["DOMAIN", "ANYONE", "ANYONE_ANONYMOUS", "MYSELF"];
-const VOCAB_GROUPS = ["Song form", "Classical form", "Phrase and theme", "Production"];
+const VOCAB_GROUPS = ["Letters", "Song form", "Classical form", "Phrase and theme", "Production"];
 
 // Theme ids: "studio" is the base look in styles.css; every other theme is src/client/themes/<id>.css.
 export function themeIds() {
