@@ -1,0 +1,14 @@
+{
+  "id": "amu140-fa26",
+  "scriptId": "1iuWLjfEN34NwFO8R-RXblGfK92JHRQnTuqcRYMVh898nu2NirJneO_rn",
+  "deploymentId": "AKfycbz052Z6o9awOlnWyjlHDOXCB_yf0b3Ab1aCviEP1JdY58aLU7K-0zSh3JStwIBVnsOW2Q",
+  "COURSE": "AMU 140 Fall 2026",
+  "TEACHERS": ["chandlec@union.edu"],
+  "ACCESS": "DOMAIN",
+  "SUBMIT": true,
+  "THEME": "tapedeck",
+  "THEMES": ["tapedeck", "keycap", "studio", "score", "chalk"],
+  "VOCAB": ["Letters", "Song form"],
+  "MARKER_CHIPS": ["Drop", "Build", "Riser", "Filter sweep", "Beat drops out", "Beat returns", "New layer", "Key change", "Tempo change", "Climax"],
+  "LEVEL_NAMES": ["Sections", "Large form"]
+}
