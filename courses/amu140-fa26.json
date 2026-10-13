@@ -1,14 +1,14 @@
 {
   "id": "amu140-fa26",
-  "scriptId": "",
+  "scriptId": "1iuWLjfEN34NwFO8R-RXblGfK92JHRQnTuqcRYMVh898nu2NirJneO_rn",
   "deploymentId": "",
   "COURSE": "AMU 140 Fall 2026",
   "TEACHERS": ["chandlec@union.edu"],
   "ACCESS": "DOMAIN",
   "SUBMIT": true,
-  "THEME": "keycap",
-  "THEMES": ["keycap", "score", "studio", "tapedeck", "chalk"],
-  "VOCAB": ["Classical form", "Phrase and theme", "Song form"],
-  "MARKER_CHIPS": ["PAC", "IAC", "HC", "DC", "PC", "V:HC", "to V", "to vi", "Climax", "Retransition"],
-  "LEVEL_NAMES": ["Phrases", "Sections", "Large form"]
+  "THEME": "tapedeck",
+  "THEMES": ["tapedeck", "keycap", "studio", "score", "chalk"],
+  "VOCAB": ["Letters", "Song form"],
+  "MARKER_CHIPS": ["Drop", "Build", "Riser", "Filter sweep", "Beat drops out", "Beat returns", "New layer", "Key change", "Tempo change", "Climax"],
+  "LEVEL_NAMES": ["Sections", "Large form"]
 }
