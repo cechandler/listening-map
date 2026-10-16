@@ -75,6 +75,7 @@ export function checkCourse(course, file) {
     if (typeof v === "string" && !VOCAB_GROUPS.includes(v)) errs.push(`VOCAB: unknown group "${v}" (known: ${VOCAB_GROUPS.join(", ")}, or {"name", "words"})`);
     if (typeof v === "object" && !(v && v.name && Array.isArray(v.words))) errs.push(`VOCAB: a custom group needs "name" and "words"`);
   }
+  if (course.FEEDBACK_URL && !/^(https:|mailto:)/i.test(course.FEEDBACK_URL)) errs.push("FEEDBACK_URL must start with https: or mailto:");
   if (course.EXAMPLE && !EXAMPLES.includes(course.EXAMPLE)) errs.push(`EXAMPLE must be one of ${EXAMPLES.join(", ")}`);
   if (errs.length) throw new Error(`${file}:\n  ` + errs.join("\n  "));
 }

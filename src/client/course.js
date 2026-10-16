@@ -16,9 +16,11 @@ function serverMessage(err){
 }
 let SESSION = null;
 async function initCourse(){
+  initFeedback();
   if (!IN_COURSE_FRAME && typeof MOCK_SERVER === 'undefined') return;
   try { SESSION = await server('getSession'); }
   catch(e){ showBanner('Course features are unavailable: ' + esc(serverMessage(e))); return; }
+  showFeedback(true);
   if (SESSION.course) $('#courseName').textContent = SESSION.course;
   // Submit and Student submissions sit at the top of the Settings menu, only for those who can use them.
   $('#bSubmit').hidden = !SESSION.canSubmit;
@@ -36,6 +38,37 @@ async function initCourse(){
   $('#submitPop').addEventListener('click', e => { const b = e.target.closest('[data-sub]'); if (b) openSubmission(b.dataset.sub, b); });
 }
 
+/* ---------- feedback: question, problem, suggestion ----------
+   With a course connection the message goes to the Feedback tab of the course's Sheet. Without one, a course's
+   FEEDBACK_URL (a form or a mailto: link) opens instead; with neither, the link stays hidden. */
+function showFeedback(on){ $('#fbItems').hidden = !on; $('#fbFoot').hidden = !on; }
+function initFeedback(){
+  const url = typeof CFG.FEEDBACK_URL === 'string' && /^(https:|mailto:)/i.test(CFG.FEEDBACK_URL) ? CFG.FEEDBACK_URL : '';
+  const open = () => {
+    showMenu(false);
+    if (!SESSION){ if (url) window.open(url, '_blank', 'noopener'); return; }
+    $('#fbForm').hidden = false; $('#fbDone').hidden = true; $('#fbCancel').textContent = 'Cancel';
+    $('#fbNote').textContent = (SESSION.email ? 'Sent to your instructor with your email (' + SESSION.email + ')' : 'Sent to your instructor') + ' and the name of the piece on screen.';
+    $('#fbPop').hidden = false; $('#fbPop').scrollIntoView({block: 'nearest'}); $('#fbText').focus();
+  };
+  $('#bFeedback').onclick = open; $('#bFeedback2').onclick = open;
+  $('#fbCancel').onclick = () => { $('#fbPop').hidden = true; };
+  $('#fbPop').onsubmit = e => { e.preventDefault(); sendFeedback(); };
+  if (url) showFeedback(true);
+}
+async function sendFeedback(){
+  const text = $('#fbText').value.trim();
+  if (!text){ toast('Write a message first.'); $('#fbText').focus(); return; }
+  const go = $('#fbGo'); go.disabled = true; go.textContent = 'Sending…';
+  try {
+    await server('sendFeedback', {kind: $('#fbKind').value, text, piece: S && S.meta ? [S.meta.title, S.meta.composer].filter(Boolean).join(', ') : '', browser: navigator.userAgent});
+    $('#fbText').value = '';
+    $('#fbForm').hidden = true; $('#fbCancel').textContent = 'Done';
+    $('#fbDone').hidden = false; $('#fbDone').innerHTML = '<p><b>Thanks. Your instructor has it.</b></p>';
+  } catch(e){ $('#fbNote').innerHTML = '<b>Not sent.</b> ' + esc(serverMessage(e)); }
+  finally { go.disabled = false; go.textContent = 'Send'; }
+}
+
 /* ---------- students: submit ---------- */
 // What the instructor will receive, so the student can check it before sending.
 function submitSummary(){
@@ -45,7 +78,7 @@ function submitSummary(){
   const row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
   return row('Piece', esc(S.meta.title || 'Untitled') + (S.meta.composer ? ', ' + esc(S.meta.composer) : ''))
     + row('Recording', esc(src))
-    + row('Analysis', `${blocks} blocks (${labeled} labeled) on ${S.tiers.length} ${S.tiers.length === 1 ? 'level' : 'levels'}, ${S.markers.length} markers, ${S.instruments.length} instruments, ${comments} comments`);
+    + row('Analysis', `${blocks} blocks (${labeled} labeled) on ${S.tiers.length} ${S.tiers.length === 1 ? 'section lane' : 'section lanes'}, ${S.markers.length} markers, ${S.instruments.length} tracks, ${comments} comments`);
 }
 function mineList(){
   const mine = SESSION.mine || [];

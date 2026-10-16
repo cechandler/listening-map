@@ -229,12 +229,16 @@ await step("number keys pick an instrument; E and X mark entries at the playhead
   assert.equal((await lead()).length, 2);
   await page.locator('.sp[data-tier="0"]').first().click();
   await seekTo(page, 4); await page.keyboard.press("s");
-  assert.equal(await page.evaluate(() => S.tiers[0][0].end), 4, "after a block is selected, S splits its level again");
+  assert.equal(await page.evaluate(() => S.tiers[0][0].end), 4, "after a block is selected, S splits its section lane again");
+  await frame(page);
+  assert.notEqual(await page.evaluate(() => document.activeElement && document.activeElement.id), "iLabel", "splitting leaves the cursor where it was");
   await page.keyboard.press("Control+z");
   await page.keyboard.press("Escape");
 });
 
-await step("levels and instruments reorder; Audio's label adds a level or an instrument", async () => {
+await step("section lanes and tracks reorder; Audio's label adds a section lane or a track", async () => {
+  assert.match(await page.textContent('.audiolab [data-k="addlevel"]'), /Section/);
+  assert.match(await page.textContent('.audiolab [data-k="addinst"]'), /Track/);
   const names = () => page.evaluate(() => S.instruments.map(i => i.name).join(","));
   const first = await names();
   await page.click('.lab[data-k="instlab"]');
@@ -257,25 +261,71 @@ await step("levels and instruments reorder; Audio's label adds a level or an ins
   await page.keyboard.press("Escape");
 });
 
-await step("a block's label can sit at its right end", async () => {
+await step("a block can add a second label at its right end", async () => {
   await page.locator('.sp[data-tier="1"]').first().click();
+  const left = await page.inputValue("#iLabel");
+  assert.equal(await page.locator("#iLabelEnd").count(), 0);
   await page.check("#iAlign");
-  assert.equal(await page.locator('.sp[data-tier="1"].ar').count(), 1);
-  await page.keyboard.press("Control+z");
-  await page.keyboard.press("Escape");
+  await page.fill("#iLabelEnd", "Pre-chorus");
+  await page.keyboard.press("Tab");
+  const b = page.locator('.sp[data-tier="1"]').first();
+  assert.equal(await b.locator(".sp-l").textContent(), left, "the left label stays");
+  assert.equal(await b.locator(".sp-r").textContent(), "Pre-chorus");
+  await page.uncheck("#iAlign");
+  assert.equal(await b.locator(".sp-r").count(), 0);
+  // An older analysis with its one label at the right end opens with that label in the right-end box.
+  const moved = await page.evaluate(() => { const d = JSON.parse(JSON.stringify(S)); Object.assign(d.tiers[1][0], {align: 'right', label: 'Old'}); delete d.tiers[1][0].labelEnd; openAnalysis(d, 'old'); return [S.tiers[1][0].label, S.tiers[1][0].labelEnd]; });
+  assert.deepEqual(moved, ["", "Old"]);
+  await page.evaluate(() => openExample("demo"));
 });
 
-await step("comments filter by level, markers, and instrument, as dots or pills", async () => {
+await step("comments filter by section lane, markers, and instrument, with titles in pills", async () => {
   await page.click('#cmFilters [data-cmf="mk"]');
   const heads = await page.locator("#comments .cm .meta").allTextContents();
   assert.ok(heads.length > 0 && heads.every(h => /^Marker/.test(h)), "only marker comments");
   await page.click('#cmFilters [data-cmf="t1"]');
   assert.ok((await page.locator("#comments .cm .meta").allTextContents()).some(h => /^Sections/.test(h)));
   await page.click('#cmFilters [data-cmf=""]');
-  await page.click('[data-cmstyle="pills"]');
+  assert.equal(await page.locator("[data-cmstyle]").count(), 0, "no dots or pills choice");
   assert.ok(await page.locator("#comments .cmpill").count() > 3);
-  await page.click('[data-cmstyle="dots"]');
-  assert.equal(await page.locator("#comments .cmpill").count(), 0);
+});
+
+await step("Present shows the commentary at the playhead under the timeline", async () => {
+  assert.equal(await page.isVisible("#live"), false, "hidden while editing");
+  await page.check("#present");
+  assert.ok(await page.isVisible("#live"));
+  const want = await page.evaluate(() => { const c = liveCards(10); return {sec: c.sec.map(o => o.body), inst: c.inst.map(o => o.body)}; });
+  assert.ok(want.sec.length > 0, "the demo has section commentary at 0:10");
+  await seekTo(page, 10); await frame(page);
+  assert.deepEqual(await page.locator("#liveSec .live-b").allTextContents(), want.sec);
+  assert.deepEqual(await page.locator("#liveInst .live-b").allTextContents(), want.inst);
+  const size = sel => page.$eval(sel, e => getComputedStyle(e).fontSize);
+  assert.equal(await size("#liveSec"), await size("#liveInst"), "both rows read at one size");
+  assert.ok(parseFloat(await size("#liveSec")) >= 18, "large enough for the room");
+  await page.click('#cmFilters [data-cmf="mk"]');
+  assert.equal(await page.locator("#liveSec .live-card:not(.mk)").count(), 0, "the comment filters apply");
+  await page.click('#cmFilters [data-cmf=""]');
+  await page.screenshot({ path: path.join(shots, "present-commentary.png") });
+  await page.uncheck("#present");
+  await page.evaluate(() => document.activeElement.blur());
+});
+
+await step("F fades the sound out, stops, and puts the volume back", async () => {
+  await page.evaluate(() => { P.audio.volume = 0.8; P.play(); });
+  await page.waitForFunction(() => P.playing());
+  await page.evaluate(() => { P.fadeOut(0.4); });
+  assert.equal(await page.getAttribute("#bFade", "aria-pressed"), "true");
+  await page.waitForTimeout(150);
+  assert.ok(await page.evaluate(() => P.audio.volume < 0.8), "the volume drops");
+  await page.waitForFunction(() => !P.fading);
+  assert.deepEqual(await page.evaluate(() => [P.playing(), P.audio.volume]), [false, 0.8]);
+  // Pressing F again during a fade cancels it at full volume.
+  await page.evaluate(() => P.play()); await page.waitForFunction(() => P.playing());
+  await page.keyboard.press("f"); await page.waitForTimeout(300);
+  assert.ok(await page.evaluate(() => P.fading && P.audio.volume < 0.8), "F starts a fade");
+  await page.keyboard.press("f");
+  assert.deepEqual(await page.evaluate(() => [P.playing(), P.audio.volume, !!P.fading]), [true, 0.8, false]);
+  await page.evaluate(() => P.pause());
 });
 
 await step("C shows a big clock for the room", async () => {
@@ -340,6 +390,18 @@ await step("instructor: submit, list, and open a submission from the Settings me
   await page.click("#subsBack");
   assert.ok(await page.isVisible("#subsPanel"));
   await page.click("#subsClose");
+});
+
+await step("Question? Problem? Suggestion? sends feedback from the menu or the page foot", async () => {
+  await page.click("#bMenu");
+  await page.click("#bFeedback");
+  assert.ok(await page.isVisible("#fbPop"));
+  await page.selectOption("#fbKind", "Suggestion");
+  await page.fill("#fbText", "A bigger play button, please.");
+  await page.click("#fbGo");
+  await page.waitForSelector("#fbDone:not([hidden])");
+  await page.click("#fbCancel");
+  assert.ok(await page.isVisible("#bFeedback2"));
 });
 
 await step("export downloads the analysis", async () => {
