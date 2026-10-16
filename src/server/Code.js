@@ -9,6 +9,8 @@
 
 const SUB_HEAD = ["Submitted", "Email", "Name", "Assignment", "Title", "Composer", "Source", "Blocks", "Markers", "Comments", "File", "File ID"];
 const MAX_JSON = 2 * 1024 * 1024;
+const FB_HEAD = ["Received", "Email", "Kind", "Message", "Piece", "Browser"];
+const FB_KINDS = ["Question", "Problem", "Suggestion"];
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("Index")
@@ -119,6 +121,24 @@ function submitAnalysis(p) {
     sh.appendRow(head.map(h => Object.prototype.hasOwnProperty.call(vals, h) ? vals[h] : ""));
   } finally { lock.releaseLock(); }
   return { id: file.getId(), when: now.toISOString(), assignment: assignment, title: String(meta.title || "") };
+}
+
+// Question? Problem? Suggestion? Logged as a row on the Feedback tab for the instructor to read.
+function sendFeedback(p) {
+  const text = String((p && p.text) || "").trim();
+  if (!text) throw new Error("EMPTY: Write a message first.");
+  if (text.length > 5000) throw new Error("SIZE: That message is too long (over 5,000 characters).");
+  const kind = FB_KINDS.indexOf(String(p.kind)) >= 0 ? String(p.kind) : "Question";
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = ss_();
+    let sh = ss.getSheetByName("Feedback");
+    if (!sh) sh = ss.insertSheet("Feedback");
+    if (sh.getLastRow() === 0) { sh.appendRow(FB_HEAD); sh.setFrozenRows(1); sh.getRange(1, 1, 1, FB_HEAD.length).setFontWeight("bold"); }
+    sh.appendRow([new Date(), email_(), kind, text, String(p.piece || "").slice(0, 200), String(p.browser || "").slice(0, 300)]);
+  } finally { lock.releaseLock(); }
+  return { ok: true };
 }
 
 function listSubmissions() {

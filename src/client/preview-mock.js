@@ -19,6 +19,7 @@ const MOCK_SERVER = (() => {
       return {id, when: row.when, assignment: row.assignment, title: row.title};
     },
     listSubmissions(){ if (asStudent) throw new Error('TEACHER: Only instructors can see submissions.'); return subs.map(({json, ...s}) => s); },
+    sendFeedback(p){ if (!String(p.text || '').trim()) throw new Error('EMPTY: Write a message first.'); console.log('Feedback (preview, not sent):', p); return {ok: true}; },
     getSubmission(id){ const s = subs.find(s => s.id === id); if (!s) throw new Error('NOTFOUND: That submission is gone.'); return s.json; }
   };
 })();

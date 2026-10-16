@@ -137,8 +137,9 @@ kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width
 .sp.elide{clip-path:polygon(9px 0,100% 0,100% 100%,0 100%);padding-left:14px}
 .sp.sel{box-shadow:inset 0 0 0 2px var(--focus);z-index:1}
 .sp.hc::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:var(--cc)}
-.sp-l{overflow:hidden;text-overflow:ellipsis}
-.sp.ar{justify-content:flex-end}
+.sp-l{overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+/* The right-end label leads into the next block; it gives way first when the block is narrow. */
+.sp-r{margin-left:auto;padding-left:8px;flex:0 999 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;opacity:.9}
 .bnd{position:absolute;top:0;bottom:0;width:12px;margin-left:-6px;cursor:ew-resize;z-index:2}
 .bnd:hover::after{content:"";position:absolute;left:5px;top:3px;bottom:3px;width:2px;border-radius:1px;background:var(--focus)}
 .mk{position:absolute;top:7px;display:flex;align-items:center;gap:4px;cursor:grab;white-space:nowrap;z-index:2;margin-left:-8px}
@@ -152,7 +153,6 @@ kbd{font:500 10.5px var(--mono);border:1px solid var(--line);border-bottom-width
 .ih{position:absolute;top:-4px;bottom:-4px;width:10px;cursor:ew-resize}
 .ih.l{left:-5px}.ih.r{right:-5px}
 .r-inst .trk{cursor:crosshair}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--cc);flex:none}
 /* Textures: a pattern laid over a block's or instrument entry's color (--tx is the pattern ink). */
 .txkey{position:relative;width:18px;height:11px;border-radius:3px;background:var(--cc);flex:none}
 .txsw{position:relative;overflow:hidden}
@@ -233,6 +233,25 @@ body.present .transport{border-color:color-mix(in srgb,var(--accent) 45%,var(--l
 body.present .bnd,body.present .ih{display:none}
 .presentpill{display:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:600}
 body.present .presentpill{display:inline}
+/* present mode: commentary at the playhead, under the timeline, in type large enough to read across a room.
+   Both rows share one size; each row keeps a steady height so the page doesn't jump as cards change. */
+.live{display:none}
+body.present .live{display:grid;gap:10px;font-size:clamp(18px,1.1vw + 10px,30px)}
+body.present .tlhint{display:none}
+.live-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:start;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.live-row[hidden]{display:none}
+.live-k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg);align-self:stretch;text-align:center}
+.live-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16em),1fr));gap:10px 14px;min-height:4.4em}
+.live-card{min-width:0;padding:2px 0 2px 12px;border-left:4px solid var(--cc)}
+.live-card.mk{--cc:var(--mk)}
+.live-h{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:.72em;font-weight:600}
+.live-h .cmpill{font-size:1em;padding:2px 11px}
+.live-h .meta{font-weight:400;font-size:.85em}
+.live-b{margin-top:6px;line-height:1.38;max-height:calc(1.38em * 4);overflow:hidden;overflow-wrap:anywhere}
+.live-none{margin:0;color:var(--muted);font-size:.72em;align-self:center}
+.live-card.in{animation:livein .45s ease-out}
+@keyframes livein{from{opacity:0;transform:translateY(.6em)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.live-card.in{animation:none}}
 /* course name, Look picker, submit, submissions, copy box */
 .brand .course{font:500 11px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .brand .course:empty{display:none}
@@ -257,6 +276,9 @@ body.present .presentpill{display:inline}
 .lookblurb{font-size:12px;color:var(--muted)}
 .subs{display:grid;gap:12px}
 .subform,.subdone{display:grid;gap:10px}
+.fbfoot{margin:4px 0 0;text-align:center}
+.linkbtn{border:0;background:none;padding:4px;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linkbtn:hover{color:var(--fg)}
 .subdone p{margin:0}
 .subwhat{display:grid;gap:4px;font-size:13px;border-left:3px solid var(--line);padding:2px 0 2px 10px}
 .subwhat span{color:var(--muted);display:inline-block;min-width:80px}

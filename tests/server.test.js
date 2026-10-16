@@ -117,3 +117,15 @@ test("only instructors list submissions; students open only their own; nobody op
   s.files.secret = { text: "gradebook" };
   assert.throws(() => s.ctx.getSubmission("secret"), /NOTFOUND/);
 });
+
+test("feedback lands on the Feedback tab; an empty message is refused", () => {
+  const s = load({ email: "ada@school.edu" });
+  s.ctx.setup();
+  assert.throws(() => s.ctx.sendFeedback({ kind: "Question", text: "  " }), /EMPTY/);
+  assert.equal(s.ctx.sendFeedback({ kind: "Problem", text: "Play does nothing", piece: "Song, Band", browser: "UA" }).ok, true);
+  s.ctx.sendFeedback({ kind: "Nonsense", text: "Hi" });
+  const rows = s.sheets.Feedback.rows;
+  assert.equal(rows[0][0], "Received");
+  assert.deepEqual([...rows[1].slice(1)], ["ada@school.edu", "Problem", "Play does nothing", "Song, Band", "UA"]);
+  assert.equal(rows[2][2], "Question", "an unknown kind is filed as a question");
+});

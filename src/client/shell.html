@@ -38,6 +38,10 @@
           <hr>
           <button class="mi" id="bLook" type="button" role="menuitem" aria-expanded="false" aria-controls="lookPop">Theme and light or dark</button>
           <button class="mi" id="bKeys" type="button" role="menuitem" aria-expanded="false" aria-controls="keysPop">Keyboard shortcuts</button>
+          <div class="mgroup" id="fbItems" hidden>
+            <hr>
+            <button class="mi" id="bFeedback" type="button" role="menuitem">Question? Problem? Suggestion?</button>
+          </div>
         </div>
       </div>
     </div>
@@ -64,19 +68,20 @@
       <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Space</kbd></td><td>Play from the start of the selected block or entry</td></tr>
       <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Skip 10 seconds; hold <kbd>Shift</kbd> for 1 second</td></tr>
       <tr><td><kbd>C</kbd></td><td>Show or hide the big clock</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Fade out over 5 seconds and stop, then put the volume back; press again to cancel</td></tr>
       <tr><th colspan="2">Form and markers</th></tr>
-      <tr><td><kbd>S</kbd></td><td>Split the active lane at the playhead: the level or instrument you selected last</td></tr>
-      <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the level above</td></tr>
-      <tr><td><kbd>J</kbd></td><td>Join the selected neighboring blocks (or instrument entries) into one</td></tr>
+      <tr><td><kbd>S</kbd></td><td>Split the active lane at the playhead: the section lane or track you selected last</td></tr>
+      <tr><td><kbd>G</kbd></td><td>Group selected blocks into one block on the section lane above</td></tr>
+      <tr><td><kbd>J</kbd></td><td>Join the selected neighboring blocks (or track entries) into one</td></tr>
       <tr><td><kbd>Shift</kbd> + click</td><td>Select more than one block or entry</td></tr>
-      <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or instrument entry)</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>Join the selected block with its left neighbor (or delete a marker or track entry)</td></tr>
       <tr><td><kbd>Backspace</kbd></td><td>Join the selected block with its right neighbor</td></tr>
       <tr><td><kbd>M</kbd></td><td>Add a marker at the playhead</td></tr>
-      <tr><td><kbd class="altk">Alt</kbd> + arrows</td><td>Move the selection between blocks and levels; add <kbd>Shift</kbd> to extend</td></tr>
-      <tr><th colspan="2">Instruments, while listening</th></tr>
-      <tr><td><kbd>1</kbd> to <kbd>9</kbd></td><td>Make that instrument the active lane (numbered beside each name)</td></tr>
-      <tr><td><kbd>E</kbd></td><td>The active instrument enters at the playhead</td></tr>
-      <tr><td><kbd>X</kbd></td><td>The active instrument exits at the playhead</td></tr>
+      <tr><td><kbd class="altk">Alt</kbd> + arrows</td><td>Move the selection between blocks and section lanes; add <kbd>Shift</kbd> to extend</td></tr>
+      <tr><th colspan="2">Tracks, while listening</th></tr>
+      <tr><td><kbd>1</kbd> to <kbd>9</kbd></td><td>Make that track the active lane (numbered beside each name)</td></tr>
+      <tr><td><kbd>E</kbd></td><td>The active track enters at the playhead</td></tr>
+      <tr><td><kbd>X</kbd></td><td>The active track exits at the playhead</td></tr>
       <tr><th colspan="2">Editing and view</th></tr>
       <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Z</kbd></td><td>Undo (also from a text box once its typing is undone)</td></tr>
       <tr><td><kbd class="modk">Ctrl</kbd> <kbd>Shift</kbd> <kbd>Z</kbd> or <kbd class="modk">Ctrl</kbd> <kbd>Y</kbd></td><td>Redo</td></tr>
@@ -84,7 +89,7 @@
       <tr><td>Pinch, or <kbd class="modk">Ctrl</kbd> + scroll</td><td>Zoom the timeline around the pointer (trackpad, mouse wheel, or touchscreen)</td></tr>
       <tr><td><kbd>Shift</kbd> + scroll</td><td>Move along the timeline with a mouse wheel</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Clear the selection</td></tr>
-      <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across an instrument lane to add an entry. Hold <kbd class="altk">Alt</kbd> to ignore snapping.</td></tr>
+      <tr><td>Drag</td><td>Drag a boundary or marker to adjust it. Drag across a track lane to add an entry. Hold <kbd class="altk">Alt</kbd> to ignore snapping.</td></tr>
     </table>
   </section>
 
@@ -103,6 +108,19 @@
     </div>
     <div class="subdone" id="subDone" hidden></div>
     <div class="note" id="subMine"></div>
+  </form>
+
+  <form class="pop submit" id="fbPop" hidden>
+    <div class="lookhead"><div><div class="eyebrow">Feedback</div><h2>Question? Problem? Suggestion?</h2></div>
+      <button class="btn sm" type="button" id="fbCancel">Cancel</button>
+    </div>
+    <div class="subform" id="fbForm">
+      <label class="field" style="max-width:220px"><span>This is a</span><select id="fbKind"><option>Question</option><option>Problem</option><option>Suggestion</option></select></label>
+      <label class="field"><span>Message</span><textarea id="fbText" rows="5" placeholder="What were you trying to do, and what happened? Or what would make the Listening Map better?"></textarea></label>
+      <p class="note" id="fbNote"></p>
+      <div class="actions"><button class="btn pri" type="submit" id="fbGo">Send</button></div>
+    </div>
+    <div class="subdone" id="fbDone" hidden></div>
   </form>
 
   <section class="card subs" id="subsPanel" hidden aria-label="Student submissions">
@@ -133,6 +151,7 @@
     <button class="play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
     <div class="readout" id="readout">0:00.0<small>&nbsp;</small></div>
     <button class="btn sm" id="bClock" type="button" aria-pressed="false" title="Show a large clock for the room (C)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>Big clock</button>
+    <button class="btn sm" id="bFade" type="button" aria-pressed="false" title="Fade the sound out over 5 seconds, then stop (F)">Fade out <kbd>F</kbd></button>
     <div class="grp">
       <button class="btn sm" data-skip="-10" type="button">−10s</button>
       <button class="btn sm" data-skip="-1" type="button">−1s</button>
@@ -170,18 +189,21 @@
   </form>
 
   <div class="tl" id="tl"><div class="tl-inner" id="inner"></div></div>
+  <section class="live" id="live" aria-label="Commentary at the playhead">
+    <div class="live-row"><div class="live-k">Sections</div><div class="live-cards" id="liveSec"></div></div>
+    <div class="live-row" id="liveInstRow"><div class="live-k">Tracks</div><div class="live-cards" id="liveInst"></div></div>
+  </section>
   <p class="note tlhint">Pinch on a trackpad or touchscreen, or hold <kbd class="modk">Ctrl</kbd> and scroll, to zoom around the pointer. <kbd>Shift</kbd> and scroll moves along the timeline.</p>
 
   <div class="lower">
     <section class="card" id="insp" aria-label="Inspector"></section>
     <section class="card" aria-label="Comments">
-      <div class="cmhead"><div><div class="eyebrow">Commentary</div><h2>Comments</h2></div>
-        <div class="seg" role="group" aria-label="How titles look"><button type="button" data-cmstyle="dots">Dots</button><button type="button" data-cmstyle="pills">Pills</button></div>
-      </div>
+      <div class="cmhead"><div><div class="eyebrow">Commentary</div><h2>Comments</h2></div></div>
       <div class="cmfilters" id="cmFilters" role="group" aria-label="Show comments from"></div>
       <div id="comments"></div>
     </section>
   </div>
+  <p class="fbfoot" id="fbFoot" hidden><button class="linkbtn" type="button" id="bFeedback2">Question? Problem? Make a suggestion</button></p>
 </div>
 <div class="toast" id="toast" hidden></div>
 <dialog class="card copybox" id="copyBox">
